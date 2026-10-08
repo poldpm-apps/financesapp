@@ -45,7 +45,7 @@ function doGet(e) {
        repositori públic, i la resta se li demana amb la clau a la mà. */
     plantilla.estat = estatPublic_();
     return plantilla.evaluate()
-      .setTitle('JEFE')
+      .setTitle('Finances')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   } catch (err) {
@@ -55,8 +55,8 @@ function doGet(e) {
        dia que un error porti un tros del que ha demanat l'usuari, això seria
        una injecció i no un missatge. */
     return HtmlService.createHtmlOutput(
-      '<h1>JEFE no s\'ha pogut obrir</h1><pre>' + escapaHtml_(err.message) + '</pre>' +
-      '<p>Executa <code>configuraJefe()</code> des de l\'editor d\'Apps Script.</p>'
+      '<h1>L\'app no s\'ha pogut obrir</h1><pre>' + escapaHtml_(err.message) + '</pre>' +
+      '<p>Executa <code>configura()</code> des de l\'editor d\'Apps Script.</p>'
     );
   }
 }

@@ -9,7 +9,7 @@
  */
 
 var VERSIO_JEFE = '1.0.0';
-var NOM_FULL_CALCUL = 'JEFE — Assistent';
+var NOM_FULL_CALCUL = 'Finances';
 
 /** Claus de Script Properties. Mai al codi, mai a cap fitxer versionat. */
 var PROP_ID_FULL = 'ID_FULL';
@@ -93,7 +93,7 @@ var Config = (function () {
     var id = idFull();
     if (!id) {
       throw new Error(
-        'JEFE no està configurat. Executa la funció configuraJefe() des de l\'editor d\'Apps Script.'
+        'L\'app no està configurada. Executa la funció configura() des de l\'editor d\'Apps Script.'
       );
     }
     return SpreadsheetApp.openById(id);

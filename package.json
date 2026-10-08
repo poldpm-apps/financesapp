@@ -1,16 +1,16 @@
 {
-  "name": "jefe",
+  "name": "finances",
   "version": "1.0.0",
-  "description": "Assistent personal sobre Google Sheets i Apps Script",
+  "description": "Finances: els moviments del mes, el banc, els rebuts i el patrimoni. Google Sheets i Apps Script.",
   "private": true,
   "scripts": {
     "comprova": "node eines/comprova.mjs && npm run prova",
-    "puja": "node eines/comprova.mjs && node eines/prova.mjs && node eines/prova-pont.mjs && node eines/construeix.mjs && clasp push -f && node eines/desplega.mjs",
+    "puja": "node eines/comprova.mjs && node eines/prova.mjs && node eines/construeix.mjs && clasp push -f && node eines/desplega.mjs",
     "obre": "clasp open",
     "registre": "clasp logs",
     "construeix": "node eines/construeix.mjs",
     "desplega": "node eines/desplega.mjs",
-    "prova": "node eines/prova.mjs && node eines/prova-pont.mjs && node eines/prova-pont-calendari.mjs",
+    "prova": "node eines/prova.mjs",
     "mirall": "node eines/construeix.mjs && node eines/mirall.mjs"
   },
   "devDependencies": {

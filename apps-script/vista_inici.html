@@ -45,9 +45,14 @@ App.registraVista('inici', {
            —«què he de tenir en compte ara» i «quan ho faré»— i per això es
            miren de costat i no barrejats amb els apartats, que són llocs on
            vas a treballar. */
+        /* Només si hi són. En aquesta app no hi ha ni la pàgina del dia ni la
+           de la setmana —eren de JEFE— i un botó cap a una pantalla que no
+           existeix tornava a l'inici sense dir res. */
         '<div class="apartats-quan">' +
-          '<button class="apartat viu apartat-ample" data-ves="dia">' +
-            ic('dia') + '<span>El dia</span></button>' +
+          (App.vistes.dia
+            ? '<button class="apartat viu apartat-ample" data-ves="dia">' +
+                ic('dia') + '<span>El dia</span></button>'
+            : '') +
           (App.vistes.setmana
             ? '<button class="apartat viu apartat-ample" data-ves="setmana">' +
                 ic('setmana') + '<span>La setmana</span></button>'
@@ -89,10 +94,10 @@ App.registraVista('inici', {
           '<b>Aquest aparell no rep avisos</b>' +
           '<p>' + (negat
             ? 'Has denegat les notificacions en aquest aparell. Per tornar-hi: ' +
-              'si tens JEFE instal·lat, mantén premuda la icona → Informació de ' +
+              'si tens l\'app instal·lada, mantén premuda la icona → Informació de ' +
               'l\'app → Notificacions. Al navegador, el cadenat de la barra ' +
               'd\'adreces → Notificacions → Permet.'
-            : 'Els recordatoris, l\'agenda del dia i els avisos del banc no ' +
+            : 'Els avisos del banc, dels rebuts i del patrimoni no ' +
               'et poden arribar aquí fins que ho activis.') + '</p>' +
           (negat ? '' : '<button class="btn btn-primari" data-avisos>Activa els avisos</button>') +
         '</div>' +
@@ -126,10 +131,14 @@ App.registraVista('inici', {
       arrel.innerHTML =
         '<div class="reticula" id="reticula" aria-hidden="true"></div>' +
         '<header class="capcalera cap-inici">' +
-          '<button class="dia-porta" data-ves="dia" aria-label="Obre la pàgina del dia">' +
+          /* La data només és un botó si hi ha pàgina del dia on anar. Aquí
+             no n'hi ha —era de JEFE—, i llavors és un títol i prou. */
+          (App.vistes.dia
+            ? '<button class="dia-porta" data-ves="dia" aria-label="Obre la pàgina del dia">'
+            : '<div class="dia-porta">') +
             '<p class="marge">' + esc(fmt.relativa(avui)) + '</p>' +
             '<h1>' + esc(fmt.llarga(avui)) + '</h1>' +
-          '</button>' +
+          (App.vistes.dia ? '</button>' : '</div>') +
           (t.length
             ? '<div class="cap-eines">' + t.map(function (m) {
                 /* Sense text: no hi cap i no cal. El nom hi és per a qui

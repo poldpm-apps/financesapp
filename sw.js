@@ -1,5 +1,5 @@
 /**
- * JEFE — treballador de servei
+ * Finances — treballador de servei
  *
  * Existeix per dos motius, i cap dels dos és «anar sense connexió»:
  *   1. Sense un treballador de servei registrat, Chrome no ofereix INSTAL·LAR
@@ -16,11 +16,22 @@
  * no s'han de desar enlloc. Són les teves dades.
  */
 
-var CAU = 'jefe-v1';
+/* EL NOM PORTA L'APP AL DAVANT, I NOMÉS S'ESBORREN LES SEVES.
+   Nutrició, el cos i les finances comparteixen poldpm.github.io, i la memòria
+   cau del navegador és UNA per a tot el domini. Amb un nom genèric i esborrant
+   «tot el que no sigui meu», cada app que s'actualitzés buidaria la de les
+   altres. */
+var PREFIX = 'finances-';
+/* v2 I NO v1, A POSTA. A aquesta mateixa adreça hi va viure l'app de finances
+   del juliol, i la seva memòria cau es deia «finances-v1» i guardava el SEU
+   index.html. Amb el mateix nom, aquesta app hauria heretat aquella pàgina
+   vella com a xarxa de seguretat; amb un altre, en activar-se l'esborra. */
+var CAU = PREFIX + 'v2';
 var ESSENCIALS = [
   './',
   './index.html',
   './icona.svg',
+  './icona-192.png',
   './favicon.svg',
   './manifest.webmanifest'
 ];
@@ -38,7 +49,7 @@ self.addEventListener('activate', function (ev) {
   ev.waitUntil(
     caches.keys()
       .then(function (noms) {
-        return Promise.all(noms.filter(function (n) { return n !== CAU; })
+        return Promise.all(noms.filter(function (n) { return n.indexOf(PREFIX) === 0 && n !== CAU; })
                                .map(function (n) { return caches.delete(n); }));
       })
       .then(function () { return self.clients.claim(); })

@@ -1,5 +1,5 @@
 /**
- * JEFE — construeix la interfície estàtica per a GitHub Pages
+ * Finances — construeix la interfície estàtica per a GitHub Pages
  *
  *   npm run construeix
  *
@@ -89,15 +89,15 @@ html = html.replace(/<\?!=\s*JSON\.stringify\(estat\)\s*\?>/g, 'null');
 //    servei tampoc, perquè la pàgina va dins d'un iframe d'un altre domini.
 const INSTALLACIO = `
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icona.svg">
-  <meta name="apple-mobile-web-app-title" content="JEFE">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="Finances">
   <script>
     /* Sense treballador de servei registrat, Chrome ofereix «afegir drecera».
        Amb ell, ofereix INSTAL·LAR l'aplicació de debò. */
     if ('serviceWorker' in navigator) {
       addEventListener('load', function () {
         navigator.serviceWorker.register('sw.js').catch(function (e) {
-          console.warn('JEFE: no s\\'ha pogut registrar el treballador de servei', e);
+          console.warn('Finances: no s\\'ha pogut registrar el treballador de servei', e);
         });
       });
     }

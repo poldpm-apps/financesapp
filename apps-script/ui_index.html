@@ -8,7 +8,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>JEFE</title>
+  <title>Finances</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="mask-icon" href="favicon.svg" color="#4fd6e0">
   <!--INSTALLACIO-->
@@ -54,18 +54,11 @@
 
 <main id="vista" role="main"></main>
 
-<!-- LA IA, AMAGADA I A MÀ.
-     Va ser la pantalla d'arrencada —una esfera i una caixa per parlar-hi— i
-     en Pol la va treure després de fer-la servir: per fer una cosa és més
-     ràpid fer-la que demanar-la. Però per PREGUNTAR-LI encara serveix, i per
-     això torna com el que havia de ser des del principi: un botó a la
-     cantonada que obre un calaix quan el necessites, i que la resta del
-     temps no ocupa cap decisió.
-     Va aquí i no dins de cap vista perquè es pugui preguntar des d'on siguis:
-     mirant les finances, els hàbits o el dia. -->
-<button id="b-jefe" class="flotant" aria-label="Pregunta a JEFE" title="Pregunta a JEFE">
-  <svg class="ic" aria-hidden="true"><use href="#ic-jefe"/></svg>
-</button>
+<!-- SENSE CALAIX DE PREGUNTAR. A JEFE hi havia un botó a la cantonada per
+     preguntar-li a la IA, però qui hi contesta és el mòdul de conversa
+     (40_Mod_Conversa.gs), que no forma part d'aquesta app. Un botó que
+     sempre falla és pitjor que no tenir-lo. Les finances no fan servir la
+     IA per a res: classificar va per regles i per la memòria de comerços. -->
 
 <!-- QUINA VERSIÓ ESTÀS VEIENT, i de quan és. Aquesta nit vam perdre una
      estona llarga perquè el codi era desplegat i la pàgina publicada era la
@@ -80,22 +73,9 @@
 <?!= include('ui_app'); ?>
 <?!= include('ui_relleu'); ?>
 <?!= include('ui_notifica'); ?>
-<?!= include('ui_xat'); ?>
 <?!= include('vista_inici'); ?>
-<?!= include('vista_habits'); ?>
-<?!= include('vista_nutricio'); ?>
 <?!= include('vista_finances'); ?>
-<?!= include('vista_seguiment'); ?>
-<?!= include('vista_entrenaments'); ?>
-<?!= include('vista_tasques'); ?>
-<?!= include('vista_diari'); ?>
-<?!= include('vista_calendari'); ?>
-<?!= include('vista_dia'); ?>
 <?!= include('ui_visor'); ?>
-<?!= include('vista_focus'); ?>
-<?!= include('vista_setmana'); ?>
-<?!= include('vista_relacions'); ?>
-<?!= include('vista_memoria'); ?>
 
 <script>
   (function () {

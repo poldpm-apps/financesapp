@@ -59,17 +59,23 @@ var Jefe = (function () {
 
   // ------------------------------------------------------------ memòria cau
 
+  /* EL PREFIX ÉS DE L'APP, NO DEL MARC. Nutrició, el cos i les finances
+     viuen totes a poldpm.github.io, i el navegador hi té UN SOL localStorage
+     per a totes. Amb el «jefe.» de sempre, connectar-ne una sobreescrivia
+     l'adreça i la clau de l'altra. */
+  var PREFIX_CAU = 'finances.';
+
   var Cau = {
     get: function (clau, perDefecte) {
       try {
-        var v = localStorage.getItem('jefe.' + clau);
+        var v = localStorage.getItem(PREFIX_CAU + clau);
         return v === null ? perDefecte : JSON.parse(v);
       } catch (e) { return perDefecte; }
     },
     set: function (clau, valor) {
-      try { localStorage.setItem('jefe.' + clau, JSON.stringify(valor)); } catch (e) {}
+      try { localStorage.setItem(PREFIX_CAU + clau, JSON.stringify(valor)); } catch (e) {}
     },
-    treu: function (clau) { try { localStorage.removeItem('jefe.' + clau); } catch (e) {} },
+    treu: function (clau) { try { localStorage.removeItem(PREFIX_CAU + clau); } catch (e) {} },
 
     /* Tota una família de cop: després d'escriure una dada, TOTES les pantalles
        que la mostraven han quedat velles, no només la que miraves. Sense això,
@@ -80,7 +86,7 @@ var Jefe = (function () {
         var fora = [];
         for (var i = 0; i < localStorage.length; i++) {
           var k = localStorage.key(i);
-          if (k && k.indexOf('jefe.' + prefix) === 0) fora.push(k);
+          if (k && k.indexOf(PREFIX_CAU + prefix) === 0) fora.push(k);
         }
         fora.forEach(function (k) { localStorage.removeItem(k); });
       } catch (e) {}
@@ -129,7 +135,7 @@ var Jefe = (function () {
   function cridaLocal_(modul, accio, params) {
     var clau = Servidor.clau();
     if (!clau) {
-      var sense = new Error('Encara no has connectat JEFE amb el teu servidor.');
+      var sense = new Error('Encara no has connectat l\'app amb el teu servidor.');
       sense.senseServidor = true;
       return Promise.reject(sense);
     }
@@ -155,7 +161,7 @@ var Jefe = (function () {
   function cridaRemota_(modul, accio, params) {
     var cfg = Servidor.config();
     if (!cfg || !cfg.url || !cfg.clau) {
-      var e = new Error('Encara no has connectat JEFE amb el teu servidor.');
+      var e = new Error('Encara no has connectat l\'app amb el teu servidor.');
       e.senseServidor = true;
       return Promise.reject(e);
     }
@@ -406,7 +412,7 @@ var Jefe = (function () {
       var sense = err && err.senseServidor;
       var dolenta = err && err.clauDolenta;
 
-      var titol = sense ? 'Encara no has connectat JEFE'
+      var titol = sense ? 'Encara no has connectat l\'app'
                 : dolenta ? 'La clau no és correcta'
                 : esXarxa ? 'Sense connexió'
                 : 'Alguna cosa ha fallat';
@@ -897,7 +903,7 @@ var Jefe = (function () {
     connecta: function (motiu) {
       var cfg = Servidor.config() || {};
       var dins = dinsAppsScript();
-      var cos = App.modal('Connecta JEFE',
+      var cos = App.modal('Connecta l\'app',
         (motiu ? '<div class="avis" style="margin-bottom:var(--e4)">' + esc(motiu) + '</div>' : '') +
         (dins ? '' :
           '<label class="camp"><span>URL del desplegament</span>' +

@@ -146,7 +146,12 @@ var FinancesBanc = (function () {
       var resp = UrlFetchApp.fetch(redirect, { muteHttpExceptions: true, followRedirects: true });
       var cos = resp.getContentText();
       respostaCurta = Utils.talla(cos.replace(/\s+/g, ' '), 120);
-      if (/<title>\s*JEFE\s*<\/title>/i.test(cos)) quiContesta = 'jefe';
+      /* AQUESTA APP ES DIU «Finances». A JEFE es mirava el títol «JEFE»; aquí,
+         el JEFE de sempre és justament l'altre de qui cal desconfiar: si
+         EB_REDIRECT encara és la seva adreça, el banc hi tornaria i la sessió
+         es desaria a JEFE i no aquí. */
+      if (/<title>\s*Finances\s*<\/title>/i.test(cos)) quiContesta = 'jefe';
+      else if (/<title>\s*JEFE\s*<\/title>/i.test(cos)) quiContesta = 'JEFE, no aquesta app';
       else if (/Finances backend actiu/i.test(cos)) quiContesta = 'app antiga de finances';
       else quiContesta = 'algú altre';
     } catch (e) {

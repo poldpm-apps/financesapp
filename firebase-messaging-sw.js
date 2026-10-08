@@ -34,21 +34,21 @@ if (CONFIG && CONFIG.apiKey) {
 
   firebase.messaging().onBackgroundMessage(function (missatge) {
     var d = (missatge && missatge.data) || {};
-    return self.registration.showNotification(d.titol || 'JEFE', {
+    return self.registration.showNotification(d.titol || 'Finances', {
       body: d.cos || '',
       // Sense `icon` a posta: Android no dibuixa icones SVG a les
       // notificacions, i la nostra ho és. Com que l'app està instal·lada,
       // el sistema hi posa la seva. Si la volem pròpia, caldrà un PNG.
       // Mateixa etiqueta = es reemplaça en comptes d'acumular-se. Sense
       // això, set recordatoris deixarien set línies a la barra.
-      tag: d.etiqueta || 'jefe',
+      tag: d.etiqueta || 'finances',
       renotify: true,
       data: { url: d.url || './' },
       vibrate: [60, 40, 60]
     });
   });
 } else {
-  console.warn('JEFE: firebase.config.json encara té els valors d\'exemple.');
+  console.warn('Finances: firebase.config.json encara té els valors d\'exemple.');
 }
 
 /**

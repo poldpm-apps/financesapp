@@ -254,7 +254,7 @@ function MODUL_FINANCES() {
       var r = FinancesBanc.creaSessio(p.code);
       return HtmlService.createHtmlOutput(pagina_(
         'Banc connectat',
-        '<p>' + r.comptes + ' compte(s). Ja pots tancar aquesta pestanya i tornar a JEFE.</p>'));
+        '<p>' + r.comptes + ' compte(s). Ja pots tancar aquesta pestanya i tornar a l\'app.</p>'));
     },
 
     resumInici: function () {

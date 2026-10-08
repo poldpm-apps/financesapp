@@ -19,7 +19,7 @@ var Dades = (function () {
   function fulla_(nom) {
     var f = Config.full().getSheetByName(nom);
     if (!f) {
-      throw new Error('No existeix el full «' + nom + '». Executa configuraJefe() per crear-lo.');
+      throw new Error('No existeix el full «' + nom + '». Executa configura() per crear-lo.');
     }
     return f;
   }

@@ -275,7 +275,7 @@ var Notifica = (function () {
             titol: String(titol),
             cos: String(cos || ''),
             url: capOn_(opcions.url),
-            etiqueta: String(opcions.etiqueta || 'jefe')
+            etiqueta: String(opcions.etiqueta || 'finances')
           },
           webpush: {
             headers: { Urgency: opcions.urgent ? 'high' : 'normal', TTL: '86400' },

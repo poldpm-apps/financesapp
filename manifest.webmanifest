@@ -1,19 +1,43 @@
 {
-  "name": "JEFE",
-  "short_name": "JEFE",
-  "description": "Assistent personal. Parla-hi i et respon amb les teves dades reals.",
+  "name": "Finances",
+  "short_name": "Finances",
+  "description": "El mes en moviments: el que entra, el que surt, els rebuts i el patrimoni.",
   "lang": "ca",
   "dir": "ltr",
   "start_url": "./",
   "scope": "./",
-  "id": "/jefe/",
+  "id": "/finances/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "portrait-primary",
-  "background_color": "#04070b",
-  "theme_color": "#04070b",
-  "categories": ["productivity", "utilities"],
+  "background_color": "#e8eef0",
+  "theme_color": "#e8eef0",
+  "categories": [
+    "finance",
+    "productivity"
+  ],
   "icons": [
+    {
+      "src": "icona-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "icona-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "icona-maskable-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    },
     {
       "src": "icona.svg",
       "type": "image/svg+xml",
@@ -25,14 +49,6 @@
       "type": "image/svg+xml",
       "sizes": "any",
       "purpose": "maskable"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Hàbits d'avui",
-      "short_name": "Hàbits",
-      "url": "./#habits",
-      "icons": [{ "src": "icona.svg", "type": "image/svg+xml", "sizes": "any" }]
     }
   ]
 }

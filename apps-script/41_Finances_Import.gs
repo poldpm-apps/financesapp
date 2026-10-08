@@ -55,7 +55,7 @@ var FinancesImport = (function () {
       try {
         Dades.llegeix(full).forEach(function (f) { jaHi[full][String(f.id)] = true; });
       } catch (err) {
-        informe.avisos.push('Falta el full «' + full + '». Executa configuraJefe().');
+        informe.avisos.push('Falta el full «' + full + '». Executa configura().');
       }
     });
     if (informe.avisos.length) return informe;
@@ -179,7 +179,7 @@ var FinancesImport = (function () {
     try {
       Dades.llegeix('FinancesMemoria').forEach(function (f) { jaMemoria[String(f.clau)] = true; });
     } catch (err) {
-      informe.avisos.push('Falta el full «FinancesMemoria». Executa configuraJefe().');
+      informe.avisos.push('Falta el full «FinancesMemoria». Executa configura().');
       return informe;
     }
 
