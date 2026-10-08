@@ -1,0 +1,2971 @@
+<style>
+/* =========================================================================
+   JEFE — sistema visual
+   Mon: SALA DE COMANDAMENT. Una consola de vidre fosc amb un nucli que batega.
+
+   Regla que mana sobre tota la resta: EL COLOR ES LA DADA.
+   La intensitat d'una fila surt del seu compliment, no de la decoracio.
+   Compliment alt = energia = cian ences. Compliment baix = apagat.
+
+   TRES PECES FAN EL LLENGUATGE, i no n'hi ha d'haver cap mes:
+     · L'ANELL. Tot el que te objectiu s'ensenya com un anell que s'omple.
+     · LA CLAU DE CANTONADA. Marca on comenca i on acaba un panell.
+     · EL NUCLI. La llum que ve de dalt i la reticula del fons: el fons no es
+       un color pla, es una superficie.
+
+   ELS NOMS DELS TOKENS venen del full de mapa que hi havia abans i s'han
+   deixat estar: canviar-los volia dir tocar dos-cents llocs per no guanyar
+   res. El que ha canviat es el que valen.
+   ========================================================================= */
+
+:root {
+  /* EL VALOR USAT ÉS EL PRIMER QUE EL SISTEMA SUPORTA, i amb «dark light» en un
+     aparell amb el sistema en clar el valor usat és «light». L'app, en canvi,
+     va sempre fosca: `aplicaTema` posa data-tema="fosc" sense preguntar.
+     Resultat: els ginys que pinta el navegador i no nosaltres —el calendari
+     dels camps de data, els desplegables, les barres de desplaçament,
+     l'autocompletat— sortien CLARS a dins d'una consola fosca. Es veu de
+     seguida i no ho enxampa cap prova: no és el nostre CSS, és el del sistema.
+     Per això es declara per tema i no una vegada per a tots dos. */
+  color-scheme: dark light;
+
+  /* --- la consola, de dia: la mateixa instrumentació sota el sol --- */
+  --paper:      #e8eef0;   /* el fons de la sala */
+  --paper2:     #f7fbfc;   /* la cara d'un panell */
+  --neatline:   #9cb6bf;   /* el fil que dibuixa els panells */
+  --ink:        #0d191e;
+  --ink-suau:   #4a656e;
+  --corba:      #bcced4;   /* estructura secundària */
+  --corba-mestra:#8faab3;
+  /* De dia va mes fondo del que sembla: a 11 px sobre el fons de la sala,
+     el to de nit donava 4,14 i les etiquetes petites no es llegien.
+     I una mica mes fondo encara: sobre paper blanc en sobrava, pero el dia
+     d'avui de la setmana porta el fons tenyit —`--utm-suau`— i alla el
+     numero del dia es quedava a 4,39. El text petit no te marge. */
+  --utm:        #086674;   /* la llum del sistema */
+  --utm-suau:   #cfe4e9;
+  --gr:         #c8332b;   /* el que va malament */
+  --accio:      #0a707e;
+  --sobre-accio:#ffffff;
+  --gr-ple:     #c8332b;
+  --avis:       #8a5a00;
+  --avis-fons:  #fbf0d8;
+
+  /* --- el nucli: la llum i la retícula que fan que el fons no sigui pla --- */
+  --nucli:      rgba(11,125,140,.15);
+  --reixa:      rgba(11,125,140,.05);
+  --vora-viva:  rgba(11,125,140,.5);    /* claus de cantonada */
+  --fil-viu:    rgba(11,125,140,.2);    /* fil dels panells vius */
+
+  /* --- rampa d'energia: de l'apagat a l'encès --- */
+  --h0: #dce7ea;   /* sense dades */
+  --h1: #a9cad2;
+  --h2: #7ab5c1;
+  --h3: #4a9dad;
+  --h4: #1c8496;
+  --h5: #0b6b7c;
+  --h6: #054a57;   /* al màxim */
+  --roca: #ffffff;
+
+  /* UN GRAO MES FOSC QUE LA RAMPA. El fons de «fet» duia el mateix to que la
+     casella encesa del full de mes (--h4), pero alla no hi va text a sobre i
+     aqui si: el blanc del boto triat de l'anim del diari es quedava a 4,38.
+     La rampa no es toca —es una escala i ha de seguir sent-ho—; el que puja
+     un grao es nomes el fons que ha de sostenir lletra. */
+  --fet:        var(--h5);
+  --fet-vora:   var(--h6);
+  --sobre-fet:  #ffffff;
+  --sobre-fet2: #d5edf1;
+
+  --sobre-verd:   #0f1a0c;
+  --sobre-ambre:  #3a2600;
+
+  --ombra: 0 1px 0 rgba(11,125,140,.10), 0 8px 22px rgba(13,25,30,.10);
+
+  --r: 2px;                  /* una consola no té cantonades rodones */
+  --toc: 48px;
+  --nav: 0px;
+
+  --e1: 4px; --e2: 8px; --e3: 12px; --e4: 16px;
+  --e5: 24px; --e6: 32px; --e7: 48px;
+
+  /* Corbes fortes. Les de sèrie no tenen prou empenta i tot sembla tou; i
+     entrar amb ease-in fa que sembli lent encara que duri el mateix, perquè
+     retarda el moviment just al moment que hi estàs mirant. */
+  /* LA VEU DE LES DADES.
+     Una consola no escriu les xifres amb la mateixa lletra que els noms: les
+     hores, els imports i els percentatges van en monoespaiada perque les
+     columnes quadrin i perque es llegeixin com a instrumentacio i no com a
+     prosa. Del sistema, com la resta: una font web seria una peticio mes a
+     l'arrencada, que es el risc numero u d'aquest projecte. */
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+
+  --sortida: cubic-bezier(.16, 1, .3, 1);
+  --entra:   cubic-bezier(.23, 1, .32, 1);
+  --mou:     cubic-bezier(.77, 0, .175, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="clar"]) { --nit: 1; }
+}
+:root[data-tema="fosc"] { color-scheme: dark; }
+:root[data-tema="clar"] { color-scheme: light; }
+
+:root[data-tema="fosc"] { --nit: 1; }
+
+/* LA CONSOLA DE NIT, i el que mana.
+   Aquest es el tema de casa: una sala fosca amb un nucli ences. El de dia
+   existeix i esta cuidat, pero el disseny esta pensat aqui.
+   Les tintes pugen de lluminositat perque conservin el contrast; no
+   s'inverteixen a l'atzar. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="clar"]) {
+    --paper: #05080b; --paper2: #0a1116; --neatline: #14343d;
+    --ink: #d6e8ee; --ink-suau: #67848f;
+    --corba: #123039; --corba-mestra: #1a4a56;
+    --utm: #5eeaff; --utm-suau: #0e262e;
+    --gr: #ff5c47; --avis: #ffb547; --avis-fons: #241a09;
+    --accio: #5eeaff; --sobre-accio: #04070b;
+    --nucli: rgba(94,234,255,.14); --reixa: rgba(94,234,255,.04);
+    --vora-viva: rgba(94,234,255,.55); --fil-viu: rgba(94,234,255,.15);
+    --h0: #0d1a1f; --h1: #123f4a; --h2: #145d6c; --h3: #128096;
+    --h4: #17a5c1; --h5: #35cfe4; --h6: #7ff2ff; --roca: #eaf7fa;
+    --sobre-verd: #d6e8cd; --sobre-ambre: #f7e4bd;
+    --sobre-fet: #04070b; --sobre-fet2: #06202a;
+    --ombra: 0 1px 0 rgba(94,234,255,.06), 0 10px 28px rgba(0,0,0,.55);
+  }
+}
+:root[data-tema="fosc"] {
+  --paper: #05080b; --paper2: #0a1116; --neatline: #14343d;
+  --ink: #d6e8ee; --ink-suau: #67848f;
+  --corba: #123039; --corba-mestra: #1a4a56;
+  --utm: #5eeaff; --utm-suau: #0e262e;
+  --gr: #ff5c47; --avis: #ffb547; --avis-fons: #241a09;
+  --accio: #5eeaff; --sobre-accio: #04070b;
+  --nucli: rgba(94,234,255,.14); --reixa: rgba(94,234,255,.04);
+  --vora-viva: rgba(94,234,255,.55); --fil-viu: rgba(94,234,255,.15);
+  --h0: #0d1a1f; --h1: #123f4a; --h2: #145d6c; --h3: #128096;
+  --h4: #17a5c1; --h5: #35cfe4; --h6: #7ff2ff; --roca: #eaf7fa;
+  --sobre-verd: #d6e8cd; --sobre-ambre: #f7e4bd;
+  --sobre-fet: #04070b; --sobre-fet2: #06202a;
+  --ombra: 0 1px 0 rgba(94,234,255,.06), 0 10px 28px rgba(0,0,0,.55);
+}
+
+
+/* =========================================================================
+   EL NUCLI — el fons no és un color pla
+
+   Dues capes fixes darrere de tot: una retícula molt fluixa que dona
+   superfície, i una llum que ve de dalt i cau. És el que fa que la pantalla
+   sembli una consola i no un document.
+
+   Va en un pseudoelement FIXAT i no al `background` del body: així no es
+   mou amb l'scroll —una llum que puja i baixa és un mareig— i el navegador
+   la pinta una vegada i prou en comptes de repintar-la a cada rodona.
+   ========================================================================= */
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--reixa) 1px, transparent 1px) 0 0 / 100% 26px,
+    linear-gradient(90deg, var(--reixa) 1px, transparent 1px) 0 0 / 26px 100%,
+    radial-gradient(125% 78% at 50% -12%, var(--nucli) 0%, transparent 60%);
+}
+
+/* =========================================================================
+   LA CLAU DE CANTONADA
+
+   Marca on comença i on acaba un panell. Es posa a `.viu` i prou: si totes
+   les caixes en portessin, deixaria de dir res. La corba i la corba mestra
+   del full antic ara són l'estructura secundària.
+
+   Dues cantonades i no quatre: amb la de dalt a l'esquerra i la de baix a la
+   dreta ja es llegeix el rectangle sencer, i quatre és soroll.
+   ========================================================================= */
+
+.viu { position: relative; border: 1px solid var(--fil-viu); background: var(--paper2); }
+.viu::before, .viu::after {
+  content: "";
+  position: absolute;
+  width: 8px; height: 8px;
+  border: 1px solid var(--vora-viva);
+  pointer-events: none;
+}
+.viu::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.viu::after  { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+
+/* Quan una cosa et reclama, les claus s'encenen d'ambre. El color no hi va
+   sol: la fila també ho diu amb text. */
+.viu[data-urgent="1"] { border-color: color-mix(in srgb, var(--avis) 30%, transparent); }
+.viu[data-urgent="1"]::before, .viu[data-urgent="1"]::after { border-color: var(--avis); }
+
+/* =========================================================================
+   L'ANELL
+
+   Tot el que té objectiu s'ensenya com un anell que s'omple. És l'única
+   manera d'ensenyar un objectiu en tota l'app: una barra aquí i un anell
+   allà seria tenir dos idiomes per dir el mateix.
+
+   Es fa amb `conic-gradient` i no amb SVG perquè així el pot fer servir
+   qualsevol pantalla escrivint una classe i una variable, sense haver de
+   muntar cap etiqueta.
+   ========================================================================= */
+
+.anell {
+  --p: 0;                        /* 0 a 100 */
+  --gruix: 5px;
+  position: relative;
+  width: 72px; height: 72px;
+  flex: none;
+  border-radius: 50%;
+  background:
+    conic-gradient(var(--utm) calc(var(--p) * 1%), var(--h0) 0);
+  display: grid;
+  place-content: center;
+}
+/* El forat del mig. `mask` deixaria passar el fons de la pàgina, i el que
+   volem és que es vegi la cara del panell. */
+.anell::before {
+  content: "";
+  position: absolute;
+  inset: var(--gruix);
+  border-radius: 50%;
+  background: var(--paper2);
+  border: 1px solid var(--fil-viu);
+}
+.anell > * { position: relative; }
+.anell b {
+  display: block;
+  font-family: var(--mono);
+  font-size: 1.0625rem;
+  letter-spacing: -.02em;
+  color: var(--utm);
+  text-align: center;
+  line-height: 1;
+}
+.anell small {
+  display: block;
+  font-family: var(--mono);
+  font-size: .5rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-suau);
+  text-align: center;
+  margin-top: 3px;
+}
+.anell[data-gran="1"] { width: 96px; height: 96px; --gruix: 6px; }
+.anell[data-gran="1"] b { font-size: 1.375rem; }
+
+/* S'omple en entrar. Una vegada, en carregar, i no cada cop que passes per
+   sobre: això es veu deu vegades al dia, no cent. */
+@media (prefers-reduced-motion: no-preference) {
+  .anell { animation: omple .8s var(--entra) both; }
+  @keyframes omple { from { --p: 0; } }
+}
+@property --p { syntax: "<number>"; initial-value: 0; inherits: false; }
+
+/* ------------------------------------------------------------------ base */
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  padding: 0 0 calc(var(--nav) + env(safe-area-inset-bottom, 0px));
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--utm); outline-offset: 2px; }
+
+/* ------------------------------------------------------------- tipografia
+   Els fulls de mapa tenen una veu tipogràfica pròpia: toponímia espaiada,
+   cotes petites i tabulars, retolació del marge en versaletes.
+   Font del sistema per obligació: una font web afegiria latència a
+   l'arrencada, que és el risc número u d'aquest projecte. */
+
+h1, h2, h3 { margin: 0; font-weight: 700; letter-spacing: -.01em; text-wrap: balance; }
+h1 { font-size: 1.5rem; line-height: 1.1; }
+h2 { font-size: 1.0625rem; }
+
+.toponim {
+  font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  font-size: .8125rem; color: var(--ink-suau);
+}
+.marge {                       /* retolació del marge del full */
+  font-size: .6875rem; font-weight: 700; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--utm);
+}
+.cota {                        /* cota d'una corba de nivell */
+  font-size: .8125rem; font-weight: 700; font-style: italic;
+  color: var(--corba-mestra); font-variant-numeric: tabular-nums;
+}
+.menut { font-size: .8125rem; color: var(--ink-suau); line-height: 1.4; }
+/* LES XIFRES PARLEN AMB UNA ALTRA VEU.
+   Una consola no escriu els imports amb la mateixa lletra que els noms: la
+   monoespaiada fa que les columnes quadrin soles i que un numero es llegeixi
+   com a instrumentacio i no com a prosa. Es on es nota mes la diferencia
+   entre una pantalla feta i una pantalla muntada. */
+.xifra {
+  font-family: var(--mono); font-weight: 600; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.franja-cota .n { font-family: var(--mono); font-style: normal; font-weight: 600;
+                  letter-spacing: -.02em; }
+.marge, .menut { font-variant-numeric: tabular-nums; }
+/* Xifres alineades en columna: als mapes les cotes són tabulars. */
+.num { font-variant-numeric: tabular-nums; }
+
+/* ----------------------------------------------------------- full i marge */
+
+.pagina { padding: var(--e4); max-width: 1280px; margin: 0 auto; }
+
+/* El marc doble del full de mapa. No és decoració: separa el mapa del marge. */
+
+
+/* Escala gràfica: barres alternades negre i blanc, com al peu d'un mapa. */
+
+
+/* ------------------------------------------------------------------ icones */
+
+.ic { width: 24px; height: 24px; display: block; flex: none; fill: none;
+      stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.ic-p { width: 18px; height: 18px; }
+.ic-g { width: 32px; height: 32px; }
+.ic-simbol { width: 28px; height: 28px; }
+
+/* LA INICIAL, quan el nom d un habit no s assembla a res del que sabem
+   dibuixar. No es un premi de consolacio: es la resposta honesta. Una lletra
+   sempre vol dir alguna cosa i sempre es la mateixa per al mateix habit;
+   una icona triada a l atzar —que es el que hi havia— no vol dir res i a
+   sobre et fa buscar-hi sentit. Va amb la lletra de maquina de la resta de
+   xifres del sistema, que es el que la fa semblar una etiqueta i no un error. */
+.ic.inicial {
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: .8125rem; font-weight: 600;
+  line-height: 1; letter-spacing: 0;
+  color: var(--ink-suau); border: 1px solid var(--neatline);
+  stroke: none; fill: none;
+}
+.ic.inicial.ic-g { font-size: 1.0625rem; }
+
+/* ------------------------------------------------------------------ botons */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--e2);
+  min-height: var(--toc); padding: 0 var(--e4);
+  border: 1.5px solid var(--neatline); border-radius: var(--r);
+  background: var(--paper2); color: var(--ink);
+  font-size: .9375rem; font-weight: 600; letter-spacing: .01em;
+  transition: transform .12s var(--sortida), background-color .12s linear;
+}
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-primari  { background: var(--accio); border-color: var(--accio);
+                color: var(--sobre-accio); font-weight: 600; }
+.btn-primari:active { filter: brightness(1.12); }
+.btn-secundari{ background: transparent; }
+.btn-fantasma { background: transparent; border-color: transparent; color: var(--ink-suau); }
+/* LA VARIANT DE LES COSES QUE NO ES DESFAN.
+   No hi era perque fins ara no calia: arxivar un habit es reversible i tornar
+   a obrir el que has arxivat es un clic. Llencar una foto del cos d un dia
+   concret, no: aquella foto no es pot tornar a fer.
+
+   No hi va sola. Sempre amb una pregunta pel mig i amb el text dient que fa,
+   perque qui no distingeixi el vermell ho ha de poder llegir igual. */
+.btn-perill   { background: var(--gr); border-color: var(--gr);
+                /* La mateixa tinta que el boto primari, i pel mateix motiu: al
+                   full de dia el vermell es fosc i vol lletra blanca; al de nit
+                   es un vermell encès i la vol negra. Blanc fix donava 3,06:1
+                   sobre el vermell de nit, i en calen 4,5. */
+                color: var(--sobre-accio); font-weight: 600; }
+.btn-perill:active { filter: brightness(1.12); }
+.btn-ple      { width: 100%; }
+.btn-icona    { min-width: var(--toc); padding: 0; }
+
+.btn[data-carregant="1"] { color: transparent; position: relative; pointer-events: none; }
+.btn[data-carregant="1"]::after {
+  content: ""; position: absolute; width: 18px; height: 18px;
+  border: 2px solid var(--ink); border-top-color: transparent; border-radius: 50%;
+  animation: gira .7s linear infinite;
+}
+.btn-primari[data-carregant="1"]::after { border-color: var(--sobre-accio);
+                                          border-top-color: transparent; }
+@keyframes gira { to { transform: rotate(360deg); } }
+
+/* =========================================================================
+   LA GRAELLA DE FITES — la pantalla d'avui
+
+   ABANS ERA UNA COLUMNA DE FRANGES A AMPLADA SENCERA, i amb nou hàbits la
+   pàgina feia mil cinc-cents píxels: per marcar l'últim havies de fer scroll
+   fins a baix cada dia. Si marcar-los costa, no els marques, i llavors no hi
+   ha dades i l'app no serveix de res. Ara van en graella i hi caben tots
+   d'un cop d'ull; el full del mes va a sota i allà sí que es fa scroll, que
+   és per mirar-lo i no per tocar-lo.
+
+   I les corbes de nivell han sortit de les fites. Dibuixades darrere del nom
+   li trencaven les lletres i no aportaven cap dada que no digués ja la tinta
+   del fons. On tenen sentit és al full del mes, que és on són el relleu de
+   debò i no hi va text a sobre.
+   ========================================================================= */
+
+.terreny-cap { display: flex; align-items: baseline; justify-content: space-between;
+               gap: var(--e3); margin: 0 0 var(--e2); }
+.terreny-cap .marge { margin: 0; }
+
+/* El marc va a cada fita i no al contenidor. Amb el fons al contenidor i les
+   separacions fetes amb el buit de la graella, l'última fila deixava un
+   rectangle gris a la dreta allà on no arribaven les fites —molt lleig a
+   l'escriptori, on hi caben set per fila i en sobren dues. */
+.terreny {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: var(--e2);
+}
+
+
+/* El nom mana i pot ocupar tres línies: «Sortir a caminar una estona llarga»
+   s'ha de poder reconèixer sense obrir res. El que sobra s'ensenya amb punts
+   suspensius, no es talla a mitja lletra. */
+.franja-nom {
+  font-size: .875rem; font-weight: 600; line-height: 1.25; width: 100%;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden; overflow-wrap: anywhere;
+}
+.franja-peu {
+  margin-top: auto; width: 100%; display: flex; align-items: flex-end;
+  justify-content: space-between; gap: var(--e1); line-height: 1;
+}
+.franja-sota { font-size: .75rem; color: var(--ink-suau); }
+/* Amb el fons ple treta, el text d'una targeta feta es el de sempre.
+   Les regles de sota suposaven una tinta saturada a sota i deixaven blanc
+   sobre clar: 1,17 de contrast, illegible. */
+/* Sobre la cara encesa, el gris de sempre es queda a 3,42. El text
+   secundari d'una targeta feta puja un escalo: la jerarquia ja la fa la
+   mida, no cal que la faci tambe un contrast que no arriba. */
+.franja[data-estat="fet"] .franja-sota { color: color-mix(in srgb, var(--ink) 82%, transparent); }
+
+/* Cota: la ratxa retolada com l'altitud d'una corba mestra. */
+.franja-cota { display: flex; align-items: baseline; gap: 2px; line-height: 1; }
+.franja-cota .n { font-size: 1.125rem; font-weight: 700; font-style: italic; }
+.franja-cota .u { font-size: .625rem; color: var(--ink-suau); }
+.franja[data-estat="fet"] .franja-cota .u { color: var(--ink-suau); }
+
+/* El punxó: el control picat. Únic moment animat de tota l'app.
+
+   El traç va AQUÍ i no a `.punxo circle`. El dibuix real viu dins d'un
+   `<symbol>` i el `<use>` el clona en un arbre a part, on els selectors de
+   fora no arriben: `.punxo circle` no ha casat mai amb res, i per això el
+   punxó sortia com una rodona negra plena. `fill` i `stroke` sí que
+   s'hereten, i travessen. */
+/* Ara que la franja ja no es pinta sencera, el punxo es el que diu que
+   allo esta fet: un senyal ences. Amb el text al costat, mai el color sol. */
+.punxo { width: 20px; height: 20px; flex: none;
+         fill: none; stroke: var(--utm); stroke-width: 2;
+         stroke-linecap: round; stroke-linejoin: round; }
+.franja[data-estat="fet"] .punxo { animation: pica .38s var(--sortida); }
+@keyframes pica {
+  0%   { transform: scale(.4) rotate(-18deg); opacity: 0; }
+  60%  { transform: scale(1.12) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+/* La llegenda va a la cantonada i no en una columna pròpia: una columna de
+   48 px per fita se'n menjaria mitja graella. */
+.franja-detall {
+  position: absolute; top: 0; right: 0; z-index: 2;
+  /* 44 px: es prem amb el dit, i a sobre queda tapat per la mateixa ma. */
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; background: transparent; color: var(--ink-suau); opacity: .75;
+}
+.franja-detall:active { background: var(--utm-suau); opacity: 1; }
+.franja[data-estat="fet"] ~ .franja-detall { color: var(--ink-suau); }
+.franja-detall .ic { width: 17px; height: 17px; }
+
+/* El símbol de llegenda, petit i a dalt: identifica la fita d'un cop d'ull
+   sense competir amb el nom. */
+.franja .ic-simbol { width: 20px; height: 20px; flex: none; }
+
+/* -------------------------------------------------------------------------
+   COMPTADORS — els que només compten (els cigarros del dia)
+   No es pinten de fet: aquí no hi ha res assolit. La xifra és tot el que hi ha.
+   ------------------------------------------------------------------------- */
+.franja[data-estat="compta"] { background: var(--paper); }
+
+.compt-xifra { display: flex; align-items: baseline; gap: 3px; line-height: 1; }
+.compt-xifra .n { font-size: 1.625rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.compt-xifra .u { font-size: .5625rem; letter-spacing: .08em; text-transform: uppercase;
+                  color: var(--ink-suau); }
+
+/* ==========================================================================
+   LA CORBA D'UN COMPTADOR
+
+   Ocupa el lloc que tenia la llegenda de la graella. És un canvi de criteri:
+   la llegenda explicava com llegir una taula —cosa que s'aprèn el primer dia i
+   després sobra cada dia— i això diu com va el que estàs mirant de deixar.
+
+   És l'ÚNIC dibuix de la pantalla. Hi va haver, a la targeta, una tira de
+   barres dels catorze últims dies i el canvi respecte la setmana passada
+   escrit al costat: tres maneres de dir el mateix a dos dits de distància.
+   Ara la targeta diu la xifra —on ets— i la corba diu el pendent —cap on vas—
+   i no hi ha res més a mirar.
+
+   Línia i no barres: el que importa és el pendent.
+   ========================================================================== */
+
+.compt-bloc { margin-top: var(--e4); display: flex; flex-direction: column; gap: var(--e4); }
+.compt-graf { border: 1px solid var(--neatline); background: var(--paper2); padding: var(--e3); }
+.compt-graf-cap { display: flex; align-items: center; gap: var(--e2); margin-bottom: var(--e2); }
+.compt-graf-cap .marge { flex: 1; min-width: 0; margin: 0; }
+
+.compt-tria { display: flex; gap: 2px; flex: none; }
+.compt-tria button {
+  /* 44 px com la resta: el dit no es fa més petit perquè el botó sigui
+     secundari. El que s'encongeix és la lletra, no l'àrea. */
+  min-height: 44px; min-width: 44px; padding: 0 var(--e2);
+  border: 1px solid var(--neatline); background: transparent; color: var(--ink-suau);
+  font-family: var(--mono); font-size: .6875rem; letter-spacing: .06em;
+  text-transform: uppercase;
+  transition: color .16s var(--entra), border-color .16s var(--entra);
+}
+.compt-tria button[aria-pressed="true"] { color: var(--utm); border-color: var(--utm); }
+@media (hover: hover) and (pointer: fine) {
+  .compt-tria button:hover { color: var(--utm); }
+}
+
+/* `preserveAspectRatio="none"` estira el dibuix a l'amplada que hi hagi: el
+   que importa és la forma de la corba, no que els píxels siguin quadrats. */
+.corba-compt { display: block; width: 100%; height: 90px; }
+.corba-area { fill: var(--utm); opacity: .12; stroke: none; }
+.corba-linia { fill: none; stroke: var(--utm); stroke-width: 2;
+               stroke-linejoin: round; stroke-linecap: round;
+               vector-effect: non-scaling-stroke; }
+/* La mitjana de la finestra. Sense una ratlla al mig, un pic no es distingeix
+   d'un nivell alt sostingut. */
+.corba-mitjana { stroke: var(--ink-suau); stroke-width: 1; stroke-dasharray: 3 3;
+                 vector-effect: non-scaling-stroke; }
+.corba-ultim { fill: var(--utm); }
+
+.compt-graf-peu {
+  display: flex; justify-content: space-between; gap: var(--e2); margin-top: var(--e2);
+  font-family: var(--mono); font-size: .6875rem; color: var(--ink-suau);
+}
+
+/* El botó de restar. Un comptador és l'únic que no es pot desfer sol —tornant
+   a tocar-lo en sumaria un altre—, i equivocar-se de toc passa. */
+/* Amb el marc: sense ell, sol i a la cantonada, un guió no s'entén com un
+   botó —sembla un guionet dibuixat— i el que ha de fer és convidar-te a
+   corregir el toc que t'has passat. */
+.franja-menys {
+  position: absolute; right: var(--e2); bottom: var(--e2); z-index: 2;
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--neatline); background: var(--paper2); color: var(--ink-suau);
+}
+.franja-menys:active { background: var(--utm-suau); }
+.franja-menys[disabled] { opacity: .25; }
+.franja-menys .ic { width: 17px; height: 17px; }
+
+/* -------------------------------------------------------------------------
+   ORDENAR-LOS A MÀ
+
+   Amb fletxes i no arrossegant. Arrossegar en una graella amb el dit falla
+   just quan tens pressa —comença a fer scroll, o et deixa anar la fita on no
+   toca— i aquí el que es mou és l'ordre de tot el que mires cada dia.
+   ------------------------------------------------------------------------- */
+/* La fita no es pot marcar mentre l'ordenes, i deixa lloc a sota per a la
+   barra: sense el buit, el nom quedava tapat per les fletxes. */
+.terreny[data-ordenant="1"] .franja { pointer-events: none; padding-bottom: 44px; }
+.terreny[data-ordenant="1"] .franja-detall { display: none; }
+
+.mou-barra { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+             display: flex; gap: 1px; background: var(--neatline); }
+.mou {
+  flex: 1; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; background: var(--utm); color: #fff;
+}
+.mou:active { background: var(--ink); }
+.mou .ic { width: 18px; height: 18px; }
+
+/* Una barra per dia. Per a un comptador, la graella de caselles no diu res:
+   tots els dies serien iguals. L'altura sí que ensenya cap on va. */
+.barres { display: flex; align-items: flex-end; gap: 2px; height: 96px;
+          padding: var(--e2) 0; border-bottom: 1px solid var(--neatline);
+          margin-bottom: var(--e2); }
+.barres .barra { flex: 1; min-width: 0; height: 100%;
+                 display: flex; align-items: flex-end; }
+.barres .barra i { display: block; width: 100%; min-height: 2px;
+                   background: var(--ink-suau); }
+.barres .barra[data-avui="1"] i { background: var(--utm); }
+
+/* =========================================================================
+   EL FULL DE MES — la vista d'escriptori, i la de mòbil en horitzontal
+   Dies en columnes, hàbits en files, corbes de nivell calculades del
+   compliment travessant la graella. Això és el mapa de debò.
+   ========================================================================= */
+
+.full-mes { position: relative; border: 1.5px solid var(--neatline); background: var(--paper);
+            padding: var(--e4) var(--e4) var(--e3); overflow-x: auto; }
+.full-mes .relleu { position: absolute; inset: 0; pointer-events: none; }
+
+.reixa { position: relative; z-index: 1; border-collapse: collapse; width: 100%; min-width: 620px; }
+.reixa th, .reixa td { padding: 0; border: .5px solid var(--utm-suau); }
+.reixa thead th {
+  font-size: .625rem; font-weight: 700; letter-spacing: .06em; color: var(--utm);
+  padding-bottom: var(--e2); border: 0; text-align: center; width: 3.2%;
+}
+.reixa tbody th {
+  text-align: left; font-size: .8125rem; font-weight: 600; white-space: nowrap;
+  padding: 0 var(--e3) 0 0; border: 0; max-width: 190px; overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* El full del mes: una matriu de cel·les enceses o apagades. Ences = fet.
+   La d'avui porta el fil viu i no el vermell: el vermell d'aquesta app es el
+   que va malament, i avui no va malament, avui es avui. */
+.cella { height: 24px; }
+.cella button { width: 100%; height: 100%; border: 0; background: transparent; padding: 0; display: block; }
+.cella[data-e="fet"]    { background: var(--h4); }
+.cella[data-e="nofet"]  { background: var(--h0); }
+.cella[data-e="notoca"] { background: transparent; }
+.cella[data-e="futur"]  { background: repeating-linear-gradient(45deg,
+                            transparent 0 3px, var(--utm-suau) 3px 4px); }
+.cella[data-avui="1"]   { outline: 1px solid var(--utm); outline-offset: -1px; }
+
+/* Calendari compacte del detall d'un hàbit */
+.calendari { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.calendari button {
+  aspect-ratio: 1; min-height: 40px; padding: 0;
+  border: .5px solid var(--utm-suau); background: var(--paper2);
+  font-size: .6875rem; font-weight: 700; color: var(--ink-suau);
+  font-variant-numeric: tabular-nums;
+}
+.calendari button[data-e="fet"]    { background: var(--fet); color: var(--sobre-fet); border-color: var(--fet-vora); }
+.calendari button[data-e="notoca"] { background: transparent; border-color: transparent; }
+.calendari button[data-e="futur"]  { background: repeating-linear-gradient(45deg,
+                                       transparent 0 3px, var(--utm-suau) 3px 4px);
+                                     pointer-events: none; }
+.calendari button[data-avui="1"]   { outline: 2px solid var(--gr); outline-offset: -2px; }
+
+/* Llegenda del full: la caixa que explica la simbologia. Obligatòria en un mapa. */
+.llegenda { border: 1.5px solid var(--neatline); padding: var(--e3) var(--e4);
+            background: var(--paper); }
+.llegenda ul { list-style: none; margin: var(--e2) 0 0; padding: 0;
+               display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--e2); }
+.llegenda li { display: flex; align-items: center; gap: var(--e2); font-size: .8125rem; }
+.mostra { width: 22px; height: 14px; border: .5px solid var(--neatline); flex: none; }
+
+/* Rampa hipsomètrica de la llegenda */
+.rampa { display: flex; height: 12px; border: .5px solid var(--neatline); }
+.rampa i { flex: 1; }
+
+/* AQUEST `min-width: 0` ÉS EL QUE TREU EL SCROLL HORITZONTAL DEL MÒBIL.
+   Una columna de graella val `min-width: auto` per defecte, o sigui que no
+   es pot encongir per sota del seu contingut. A dins hi ha la taula del full
+   de mes, que en té 620 de mínims: la columna es plantava a 654 px i tota la
+   pàgina se n'anava a la dreta, a 375 i a l'amplada que fos. Amb el zero, la
+   columna s'encongeix i la taula fa el seu propi scroll a dins, que és on
+   toca. Mesurat al mirall: 670 px d'ample de pàgina abans, 375 després. */
+.dues-columnes { display: grid; gap: var(--e4); }
+.dues-columnes > * { min-width: 0; }
+
+/* ---------------------------------------------------------------- entrades */
+
+.camp { display: block; margin-bottom: var(--e4); }
+.camp > span { display: block; margin-bottom: var(--e2); }
+
+/* L'ERROR D'UN CAMP VA AL COSTAT DEL CAMP.
+   Sortia de brindis a baix de tot de la pantalla: a fora del diàleg que
+   l'havia provocat, i al mòbil sovint ni es veia. Aquí va enganxat al camp,
+   amb `role="alert"` perquè qui no la mira també se n'assabenti. El color no
+   ho diu sol: hi ha el símbol al davant. */
+.camp-mal {
+  margin: calc(var(--e3) * -1) 0 var(--e4);
+  display: flex; gap: var(--e2); align-items: flex-start;
+  font-size: .8125rem; line-height: 1.45; color: var(--gr);
+}
+.camp-mal::before { content: '!'; flex: none; font-weight: 700; }
+.entrada, select.entrada, textarea.entrada {
+  width: 100%; min-height: var(--toc); padding: var(--e3);
+  border: 1.5px solid var(--neatline); border-radius: var(--r);
+  background: var(--paper); color: var(--ink);
+  -webkit-appearance: none; appearance: none;
+}
+.entrada::placeholder { color: var(--ink-suau); opacity: 1; }
+/* EL FOCUS NO ES POT APAGAR. Canviar el color d'una vora d'un pixel no es
+   un indicador: qui va amb teclat ha de veure on es sense endevinar-ho. La
+   vora s'encen igual, pero el ring hi es. */
+.entrada:focus { border-color: var(--utm); }
+.entrada:focus-visible { outline: 3px solid var(--utm); outline-offset: 1px; }
+
+.opcions { display: flex; flex-wrap: wrap; gap: var(--e2); }
+.opcio {
+  min-height: var(--toc); min-width: var(--toc); padding: 0 var(--e3);
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--neatline); border-radius: var(--r);
+  background: var(--paper); font-weight: 600;
+}
+.opcio[aria-pressed="true"] { background: var(--fet); border-color: var(--fet-vora); color: var(--sobre-fet); }
+
+.passos { display: flex; gap: var(--e1); align-items: center; }
+.pas { width: var(--toc); height: var(--toc); display: inline-flex;
+       align-items: center; justify-content: center;
+       border: 1.5px solid var(--neatline); border-radius: var(--r); background: var(--paper); }
+
+/* ------------------------------------------------------------- commutador */
+
+.commutador { display: flex; align-items: center; justify-content: space-between;
+              gap: var(--e3); min-height: var(--toc); }
+.commutador input { position: absolute; opacity: 0; pointer-events: none; }
+.commutador .pista { width: 52px; height: 30px; flex: none; background: var(--paper2);
+                     border: 1.5px solid var(--neatline); position: relative;
+                     transition: background-color .18s linear; }
+.commutador .pista::after { content: ""; position: absolute; top: 2px; left: 2px;
+                            width: 22px; height: 22px; background: var(--neatline);
+                            transition: transform .22s var(--sortida); }
+.commutador input:checked + .pista { background: var(--fet); }
+.commutador input:checked + .pista::after { transform: translateX(22px); }
+
+/* -------------------------------------------------------------- navegació */
+
+.nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: flex; background: var(--paper);
+  border-top: 3px double var(--neatline);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.nav a { flex: 1; min-height: var(--nav); display: flex; flex-direction: column;
+         align-items: center; justify-content: center; gap: 3px;
+         text-decoration: none; color: var(--ink-suau);
+         font-size: .6875rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.nav a[aria-current="page"] { color: var(--gr); }
+.nav a[aria-current="page"] .ic { stroke-width: 2.1; }
+
+/* ------------------------------------------------------------------ estats */
+
+.estat { padding: var(--e7) var(--e4); text-align: center; }
+.estat .ic { margin: 0 auto var(--e3); color: var(--ink-suau); }
+.estat p { margin: 0 auto var(--e4); max-width: 38ch; color: var(--ink-suau); }
+
+.avis { display: flex; gap: var(--e3); align-items: flex-start;
+        padding: var(--e3) var(--e4); background: var(--avis-fons);
+        border: 1.5px solid var(--avis); font-size: .875rem; line-height: 1.45; }
+.avis .ic { color: var(--avis); }
+.avis strong { display: block; }
+
+.esquelet { background: var(--paper2); animation: pulsa 1.4s ease-in-out infinite;
+            border-bottom: 2px solid var(--neatline); }
+.esquelet.franja-fantasma { height: 76px; }
+@keyframes pulsa { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+
+.brindis {
+  position: fixed; left: var(--e4); right: var(--e4);
+  bottom: calc(var(--nav) + env(safe-area-inset-bottom, 0px) + var(--e3));
+  z-index: 60; max-width: 480px; margin: 0 auto;
+  display: flex; align-items: center; gap: var(--e3);
+  padding: var(--e3) var(--e4); border: 1.5px solid var(--neatline);
+  background: var(--neatline); color: var(--paper);
+  box-shadow: var(--ombra); font-size: .875rem; font-weight: 600;
+  transform: translateY(140%); opacity: 0; visibility: hidden;
+  transition: transform .3s var(--sortida), opacity .2s linear, visibility 0s linear .3s;
+}
+.brindis[data-visible="1"] { transform: translateY(0); opacity: 1; visibility: visible;
+  transition: transform .3s var(--sortida), opacity .2s linear, visibility 0s; }
+.brindis[data-to="error"] { background: var(--gr-ple); border-color: var(--gr-ple); color: #fff; }
+@media (min-width: 900px) { .brindis { bottom: var(--e4); } }
+
+.sense-xarxa { display: flex; align-items: center; justify-content: center; gap: var(--e2);
+               padding: var(--e2); background: var(--avis-fons);
+               border-bottom: 1px solid var(--avis);
+               font-size: .8125rem; font-weight: 600; }
+.sense-xarxa .ic { color: var(--avis); }
+
+/* ------------------------------------------------------- crida dels avisos */
+/* AIXÒ HAURIA D'HAVER-HI ESTAT DES DEL PRIMER DIA.
+   El mòdul de notificacions era complet i correcte —demanava permís,
+   registrava la fitxa, la refrescava a cada obertura— i no el cridava ningú:
+   no hi havia cap botó enlloc. El resultat és que l'únic aparell registrat
+   era el navegador de l'ordinador, on el permís s'havia donat pel seu compte,
+   i el mòbil no va rebre mai res.
+
+   Per això la crida NO va amagada a cap menú: va a la primera pantalla, i
+   només hi és mentre AQUEST aparell no en rebi. El dia que en rep, marxa. */
+.crida-avisos { display: flex; align-items: flex-start; gap: var(--e3);
+                margin: 0 0 var(--e4); padding: var(--e3);
+                background: var(--avis-fons);
+                border: 1px solid var(--avis); border-left-width: 3px; }
+.crida-avisos .ic { flex: none; color: var(--avis); margin-top: 1px; }
+.crida-avisos > div { flex: 1; min-width: 0; }
+.crida-avisos b { display: block; font-size: .6875rem; letter-spacing: .08em;
+                  text-transform: uppercase; color: var(--avis); }
+.crida-avisos p { margin: 2px 0 var(--e3); font-size: .875rem; line-height: 1.45; }
+.crida-avisos .btn { min-height: var(--toc); }
+
+/* ---------------------------------------------------------------- nutrició */
+/* El balanç es llegeix com un perfil: el dèficit puja a la dreta i el
+   superàvit baixa a l'esquerra. La fita de l'objectiu és una marca al terreny,
+   no una barra de progrés: no vols "omplir" res, vols passar d'un punt. */
+
+/* Capçalera compacta: navegar entre dies no ha de menjar-se un terç de la
+   pantalla. Les fletxes i la data mantenen els 44 px de zona tocable; la tira
+   de període és més prima perquè cada botó ocupa un terç de l'amplada, que ja
+   és una diana grossa. */
+.capcalera-nutri { padding: max(var(--e2), env(safe-area-inset-top, 0px)) var(--e3) 0; }
+.capcalera-nutri .capcalera-fila { gap: 0; }
+.capcalera-nutri .btn-icona { min-width: 44px; min-height: 44px; padding: 0; }
+
+.data-nutri { flex: 1; min-width: 0; background: none; border: 0; padding: 2px;
+              min-height: 44px; cursor: pointer; font: inherit; color: inherit;
+              display: flex; flex-direction: column; justify-content: center; }
+.data-nutri b { font-size: .9375rem; font-weight: 700; line-height: 1.2;
+                overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.data-nutri span { font-size: .6875rem; letter-spacing: .08em; text-transform: uppercase;
+                   color: var(--ink-suau); }
+
+/* El títol ÉS el selector de període. Una línia en comptes de dues, i el que
+   canvies un cop a la setmana deixa de tenir una franja fixa a la pantalla. */
+.titol-periode { flex: 1; min-width: 0; background: none; border: 0; padding: 2px var(--e2);
+                 min-height: 44px; cursor: pointer; font: inherit; color: inherit;
+                 display: flex; flex-direction: column; justify-content: center; }
+.titol-periode b { font-size: .9375rem; font-weight: 700; line-height: 1.2;
+                   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.titol-periode span { font-size: .6875rem; letter-spacing: .08em; text-transform: uppercase;
+                      color: var(--utm); overflow: hidden; text-overflow: ellipsis;
+                      white-space: nowrap; }
+
+.tria-periode { display: flex; flex-direction: column; gap: var(--e2); }
+.tria-periode button { min-height: var(--toc); width: 100%; text-align: left;
+                       padding: 0 var(--e4); font: inherit; font-size: 1rem;
+                       background: transparent; color: var(--ink);
+                       border: 1.5px solid var(--neatline); border-radius: var(--r); }
+.tria-periode button[aria-current="true"] { background: var(--ink); color: var(--paper);
+                                            font-weight: 700; }
+.tria-periode hr { width: 100%; border: 0; border-top: 1px solid var(--utm-suau);
+                   margin: var(--e2) 0; }
+
+.segments { display: flex; gap: 0; margin: var(--e2) 0 0;
+            border-top: 1px solid var(--neatline); }
+.segments button { flex: 1; min-width: 0; min-height: 34px; background: none; border: 0;
+                   border-right: 1px solid var(--neatline); cursor: pointer;
+                   font: inherit; font-size: .75rem; letter-spacing: .06em;
+                   text-transform: uppercase; color: var(--ink-suau); }
+.segments button:last-child { border-right: 0; }
+.segments button[aria-selected="true"] { background: var(--ink); color: var(--paper); font-weight: 700; }
+
+/* Ordre de lectura: xifres, àpats, tancament. El mateix que feia FitFat. */
+.nutri { display: flex; flex-direction: column; gap: var(--e4); }
+
+.fitxa { border: 1.5px solid var(--neatline); padding: var(--e4);
+         background: var(--paper2); margin-bottom: var(--e4); }
+.fitxa[data-estat="deficit_assolit"] { background: var(--h1); color: var(--sobre-verd); }
+.fitxa[data-estat="superavit"] { background: var(--avis-fons); color: var(--sobre-ambre); }
+.fitxa .xifra-gran { font-size: 2.5rem; line-height: 1; font-weight: 700;
+                     font-variant-numeric: tabular-nums; }
+.fitxa .u { font-size: .875rem; font-weight: 400; margin-left: 4px; opacity: .7; }
+.verdicte { margin: var(--e3) 0 0; font-size: .9375rem; }
+
+.balanc { margin-top: var(--e4); }
+.balanc-via { position: relative; height: 12px; background: var(--roca);
+              border: 1px solid var(--neatline); }
+.balanc-via i { position: absolute; top: 0; bottom: 0; display: block; }
+.balanc-via i[data-costat="deficit"] { background: var(--h1); }
+.balanc-via i[data-costat="superavit"] { background: var(--h5); }
+.balanc-via u { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1.5px;
+                background: var(--neatline); }
+.balanc-via b { position: absolute; top: -6px; width: 0; height: 0;
+                border-left: 5px solid transparent; border-right: 5px solid transparent;
+                border-top: 6px solid var(--gr); transform: translateX(-5px); }
+/* LA RETOLACIÓ DEL PERFIL HEREDA EL COLOR DE LA SEVA SUPERFÍCIE.
+   Abans estava fixada a `--ink-suau` i a `--gr`, i aquest peu va A SOBRE de
+   la fitxa del balanç, que es pinta del color de l'estat. Sobre el verd del
+   dèficit assolit donava 2,95, i «objectiu» en vermell sobre verd, 1,93:
+   il·legible, i a més el pitjor parell possible per a qui no distingeix el
+   vermell del verd. Amb `currentColor` la retolació segueix el text de la
+   superfície sigui quina sigui, i l'objectiu es destaca amb el gruix i no
+   amb un color que allà no es veu. */
+.balanc-peu { display: flex; justify-content: space-between; margin-top: var(--e1);
+              font-size: .6875rem; letter-spacing: .08em; text-transform: uppercase;
+              color: currentColor; opacity: .82; }
+.balanc-peu .fita-txt { font-weight: 700; opacity: 1; }
+
+.tres-xifres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--e2); }
+/* min-width:0 a tot arreu: als grids, el valor per defecte és `auto`, i un
+   camp o un número llarg empeny la columna més enllà de la pantalla. És el
+   que feia aparèixer la barra de desplaçament horitzontal. */
+.tres-xifres .xifra { min-width: 0; display: flex; flex-direction: column; gap: 2px;
+                      border-left: 2px solid var(--neatline); padding-left: var(--e2);
+                      font-weight: 400; overflow: hidden; }
+/* La xifra no es parteix mai. Un import com «−2960,33 €» partit deixa l'euro
+   sol a la línia de sota, i el que era un número passa a semblar un error.
+   Per això la mida arrenca petita i creix quan hi ha amplada, en comptes de
+   ser gran i confiar que hi càpiga. */
+.tres-xifres .xifra b { font-size: 1.0625rem; font-variant-numeric: tabular-nums;
+                        white-space: nowrap; }
+.tres-xifres .xifra .u { font-size: .75rem; font-weight: 400; margin-left: 2px;
+                         color: var(--ink-suau); }
+@media (min-width: 420px) { .tres-xifres .xifra b { font-size: 1.1875rem; } }
+@media (min-width: 900px) { .tres-xifres .xifra b { font-size: 1.375rem; } }
+
+.camp-activitat { display: block; margin: var(--e4) 0; }
+.camp-activitat input { width: 100%; min-height: var(--toc); margin-top: var(--e1);
+                        padding: 0 var(--e3); font: inherit; font-variant-numeric: tabular-nums;
+                        background: var(--paper); color: var(--ink);
+                        border: 1px solid var(--neatline); border-radius: var(--r); }
+
+/* L'objectiu de proteïna, en anell. La barra que hi havia deia el mateix
+   que l'anell de la pàgina del dia amb una forma diferent: dos idiomes per
+   a una sola cosa. El que falta va al costat en text, perquè no depengui de
+   saber llegir un cercle. */
+.prot-bloc { margin-top: var(--e4); display: flex; align-items: center; gap: var(--e4); }
+.prot-diu { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.prot-diu .num { font-family: var(--mono); font-size: 1.125rem; font-weight: 600;
+                 letter-spacing: -.02em; }
+.prot-cap { display: flex; justify-content: space-between; align-items: baseline;
+            margin-bottom: var(--e1); }
+.prot-barra { height: 8px; background: var(--roca); border: 1px solid var(--neatline); }
+.prot-barra i { display: block; height: 100%; background: var(--h3); }
+
+.apat { border: 1px solid var(--neatline); margin-bottom: var(--e4); }
+.apat-cap { display: flex; align-items: baseline; gap: var(--e2);
+            padding: var(--e3); border-bottom: 1px solid var(--neatline);
+            background: var(--paper2); }
+.apat-cap h2 { flex: 1; font-size: 1rem; }
+.apat-items:not(:empty) { border-bottom: 1px solid var(--neatline); }
+.ingesta { display: flex; align-items: center; gap: var(--e2);
+           padding: var(--e2) var(--e3); border-bottom: 1px solid var(--utm-suau); }
+.ingesta:last-child { border-bottom: 0; }
+.ingesta .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ingesta .menut { overflow-wrap: anywhere; }
+.ingesta .btn-icona { min-width: 44px; }
+
+/* La llista d'aliments guardats. El nom mana; les xifres van petites i grises,
+   perquè el que hi busques és «tonyina» i no «185». Amb tot de la mateixa mida,
+   cada aliment és una frase que has de llegir sencera per descartar-la. */
+.cerca-aliment { width: 100%; min-height: var(--toc); margin-bottom: var(--e3);
+                 padding: 0 var(--e3); font: inherit; background: var(--paper);
+                 color: var(--ink); border: 1px solid var(--neatline); border-radius: var(--r); }
+.aliments { max-height: 56vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.aliment-fila { display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+                width: 100%; min-height: 56px; padding: var(--e2) var(--e3);
+                background: none; border: 0; border-bottom: 1px solid var(--utm-suau);
+                text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.aliment-fila:last-child { border-bottom: 0; }
+.aliment-fila:active { background: var(--paper2); }
+.aliment-nom { font-size: 1rem; overflow: hidden; text-overflow: ellipsis;
+               white-space: nowrap; max-width: 100%; }
+.aliment-dades { font-size: .6875rem; color: var(--ink-suau);
+                 font-variant-numeric: tabular-nums; }
+
+.tria-aliment { grid-column: 1 / -1; width: 100%; }
+
+/* El botó que desplega el formulari de l'àpat. Sense marc propi: és el peu
+   de la fitxa de l'àpat, no una peça a part. */
+.apat-obre { border: 0; border-radius: 0; justify-content: flex-start;
+             padding: 0 var(--e3); color: var(--ink-suau); }
+.apat-obre[aria-expanded="true"] { color: var(--ink); border-bottom: 1px solid var(--neatline); }
+.apat-items:not(:empty) + .apat-obre { border-top: 0; }
+
+/* Per a qui ho escolta: «Afegeix-hi a Dinar». A la pantalla no cal, que el
+   títol de l'àpat és just a sobre; llegit en veu alta, sense el nom no saps
+   a quin dels tres l'estàs afegint. */
+.nomes-lectors { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+                 overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+.apat-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+             gap: var(--e2); padding: var(--e3); }
+.apat-form select, .apat-form input { min-width: 0; width: 100%; min-height: var(--toc);
+                                      padding: 0 var(--e2);
+                                      font: inherit; background: var(--paper); color: var(--ink);
+                                      border: 1px solid var(--neatline); border-radius: var(--r); }
+.apat-form select, .apat-form [data-nom] { grid-column: 1 / -1; }
+.apat-form [data-afegeix] { grid-column: 1 / -1; }
+.apat-form [data-desa-aliment] { grid-column: 1 / -1; }
+
+/* Gràfica de balanç. La línia del mig és l'equilibri: cap a la dreta (o cap
+   amunt) hi ha el dèficit, cap a l'altra banda el superàvit. Una sola
+   variable dibuixada, que és l'única manera que es pugui llegir. */
+
+.bal-setmana { display: flex; flex-direction: column; }
+.bal-fila { display: grid; grid-template-columns: 68px minmax(0, 1fr) 62px;
+            align-items: center; gap: var(--e2); min-height: 44px; width: 100%;
+            background: none; border: 0; border-bottom: 1px solid var(--utm-suau);
+            padding: 0; cursor: pointer; font: inherit; color: inherit; text-align: left; }
+.bal-fila:last-child { border-bottom: 0; }
+.bal-fila[data-buit] { cursor: default; }
+.bal-nom { font-size: .8125rem; color: var(--ink-suau); overflow: hidden;
+           text-overflow: ellipsis; white-space: nowrap; }
+.bal-via { position: relative; display: block; height: 14px; min-width: 0;
+           background: var(--roca); border: 1px solid var(--neatline); }
+.bal-via u { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1.5px;
+             background: var(--neatline); }
+.bal-via i { position: absolute; top: 0; bottom: 0; display: block; }
+.bal-xifra { font-size: .875rem; font-weight: 700; text-align: right;
+             font-variant-numeric: tabular-nums; color: var(--ink-suau); }
+
+/* LA XIFRA HA DE SER LLEGIBLE.
+   La rampa d energia (--h1..--h6) es per a les superficies del relleu, no
+   per a text: --h1 es el grao mes apagat i sobre el fons de nit dona 1,75:1.
+   O sigui que l ingres —la xifra que mes vols veure— era la menys visible de
+   tota la pantalla, i a fora amb sol no es veia gens. Les barres es queden amb
+   la rampa, que alli si que hi pertany; el text agafa el grao de l altre
+   extrem, que es llegeix i segueix sent la mateixa familia de tinta. */
+[data-costat="deficit"] { color: var(--h6); }
+.bal-via i[data-costat="deficit"], .bal-mes-caixa i[data-costat="deficit"] { background: var(--h1); }
+[data-costat="superavit"] { color: var(--h5); }
+.bal-via i[data-costat="superavit"], .bal-mes-caixa i[data-costat="superavit"] { background: var(--h5); }
+
+.bal-mes-caixa { position: relative; height: 170px; border: 1px solid var(--neatline);
+                 background: var(--roca); }
+.bal-mes-caixa > u { position: absolute; left: 0; right: 0; top: 50%; height: 1.5px;
+                     background: var(--neatline); }
+.bal-mes-caixa i { position: absolute; display: block; }
+.bal-mes-eix { position: relative; height: 15px; margin-top: 2px; }
+.bal-mes-eix span { position: absolute; font-size: .625rem; color: var(--ink-suau);
+                    font-variant-numeric: tabular-nums; transform: translateX(-50%); }
+
+
+/* ==========================================================================
+   LES PECES COMPARTIDES, PASSADES A LA CONSOLA
+
+   Aquestes tres surten a totes les pantalles, i per això valen més que
+   qualsevol arreglo d'una sola: la capçalera, les franges i l'escala.
+   ========================================================================== */
+
+/* LA CAPÇALERA. Era el marc doble d'un full de mapa. Ara és el travesser
+   d'una consola: un fil viu a sota i, per sobre, la mateixa llum que hi ha
+   al fons —així la barra no sembla enganxada a la pantalla, sembla que hi
+   estigui a dins. */
+.capcalera {
+  position: sticky; top: 0; z-index: 20;
+  background:
+    linear-gradient(180deg, var(--nucli) 0%, transparent 70%),
+    var(--paper);
+  border-bottom: 1px solid var(--fil-viu);
+  box-shadow: 0 1px 0 var(--vora-viva);
+  padding: max(var(--e3), env(safe-area-inset-top, 0px)) var(--e4) var(--e3);
+}
+/* QUE PUGUI PLEGAR-SE. A mida normal la fila hi cap sempre i això no canvia
+   res; amb el zoom del navegador al 200 % —que és com llegeix qui no hi veu
+   bé— els botons de la capçalera sortien fora de la pantalla sense cap
+   manera d arribar-hi, i la pàgina sencera demanava desplaçament horitzontal.
+   Plegant, baixen a la línia de sota i s hi arriba. */
+.capcalera-fila { display: flex; align-items: center; gap: var(--e3);
+                  flex-wrap: wrap; max-width: 1280px; margin: 0 auto; }
+
+/* L'ESCALA. Era l'escala gràfica d'un mapa —barres alternades— i ara és el
+   que sembla: un indicador de senyal. Els mateixos quatre traços, però
+   pujant, i l'últim encès. Cap etiqueta: si calgués explicar-lo no valdria
+   la pena tenir-lo. */
+.escala { display: flex; align-items: flex-end; gap: 2px; height: 14px; width: auto; border: 0; }
+.escala i { width: 3px; background: var(--corba-mestra); }
+.escala i:nth-child(1) { height: 35%; }
+.escala i:nth-child(2) { height: 58%; }
+.escala i:nth-child(3) { height: 79%; }
+.escala i:nth-child(4) { height: 100%; background: var(--utm); }
+
+/* LES FRANGES de la pantalla d'inici. Eren un tros de terreny pintat amb la
+   tinta del compliment; ara són instruments: fil, cara de panell i les claus
+   de cantonada quan la targeta et reclama.
+
+   El color segueix sent la dada —el que va bé s'encén, el que no s'apaga—,
+   però passa del fons al FIL i a la xifra. Un rectangle pintat sencer es
+   menja el text que hi ha a sobre; una vora encesa, no. */
+.franja-fila { position: relative; display: flex; min-width: 0;
+               border: 1px solid var(--neatline); background: var(--paper2); }
+
+.franja {
+  position: relative; overflow: hidden; flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--e1);
+  min-height: 106px; padding: var(--e3);
+  border: 0; background: transparent; color: var(--ink); text-align: left;
+  transition: background-color .16s var(--entra), transform .12s var(--entra);
+}
+.franja:active { transform: scale(.985); background: var(--utm-suau); }
+
+/* FET O NO FET, D'UNA ULLADA.
+   El primer intent va treure el fons ple i ho va deixar tot igual de fosc:
+   per saber quins hàbits quedaven s'havien de llegir un per un. La cara del
+   panell ha de canviar, no només el fil —una vora d'un píxel no s'escaneja—.
+
+   Fet = la cara s'encén. Per fer = la cara es queda fosca i el fil, apagat.
+   Tres coses ho diuen alhora i no només el color: la superfície, el punxó i
+   la barra de l'esquerra. */
+
+.franja-fila:has(.franja[data-estat="fet"]) {
+  border-color: var(--utm);
+  /* Prou encesa perquè es vegi de reüll. Al 15 % la diferència de claror amb
+     una targeta per fer era d'1,4 i s'havien de llegir una per una, que és
+     justament el que no ha de passar en aquesta pantalla. */
+  background: color-mix(in srgb, var(--utm) 30%, var(--paper2));
+  /* I la barra de l'esquerra com a vora de debò: un pseudoelement aquí xoca
+     amb el de les claus de cantonada i no sempre arriba a pintar-se. */
+  border-left: 3px solid var(--utm);
+}
+.franja[data-estat="fet"] { background: transparent; }
+
+/* Encara per fer: la cara fosca i el nom fluix. No s'apaga del tot —has de
+   poder llegir què és— però es nota que no ha passat res. */
+.franja-fila:has(.franja[data-estat="nofet"]) { border-color: var(--neatline); }
+.franja[data-estat="nofet"] .franja-sota { color: var(--ink-suau); }
+
+/* Al dia: el fil s'encén i la xifra també. */
+.franja[data-estat="fet"] { color: var(--ink); }
+.franja[data-estat="fet"] .franja-cota .n { color: var(--utm); }
+
+/* Et reclama: ambre, i les claus de cantonada. El color no hi va sol —la
+   xifra i el text també ho diuen— perquè no depengui de veure-hi bé. */
+.franja-fila:has(.franja[data-estat="pendent"]) { border-color: color-mix(in srgb, var(--avis) 45%, transparent); }
+.franja[data-estat="pendent"] .franja-cota .n { color: var(--avis); }
+.franja-fila:has(.franja[data-estat="pendent"])::before,
+.franja-fila:has(.franja[data-estat="pendent"])::after {
+  content: ""; position: absolute; width: 8px; height: 8px;
+  border: 1px solid var(--avis); pointer-events: none; z-index: 1;
+}
+.franja-fila:has(.franja[data-estat="pendent"])::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.franja-fila:has(.franja[data-estat="pendent"])::after  { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+
+.franja[data-estat="nofet"], .franja[data-estat="notoca"] { background: transparent; }
+.franja[data-estat="notoca"] .franja-nom { color: var(--ink-suau); font-weight: 500; }
+.franja[data-pendent="1"]::after {
+  content: ""; position: absolute; inset: 0; border: 1px dashed var(--utm);
+  pointer-events: none;
+}
+
+/* El relleu que hi havia de fons —les corbes de nivell del mapa— es queda
+   com a textura molt fluixa: dona una superfície a la targeta sense
+   competir amb el text. Treure'l del tot deixava una capsa buida. */
+.franja svg.relleu { opacity: .16; }
+
+/* ---------------------------------------------------------------- finances */
+
+/* On van els diners: una barra per categoria, ordenades de més a menys. La
+   més llarga és la que et menja el mes, i es veu sense llegir cap número. */
+.cats { display: flex; flex-direction: column; }
+.cat-fila { display: grid; grid-template-columns: minmax(0, 1fr) 96px auto;
+            align-items: center; gap: var(--e3); min-height: 44px; width: 100%;
+            background: none; border: 0; border-bottom: 1px solid var(--utm-suau);
+            padding: var(--e2) 0; cursor: pointer; font: inherit; color: inherit;
+            text-align: left; }
+.cat-fila:last-child { border-bottom: 0; }
+.cat-nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .9375rem; }
+/* LES BARRES DE CATEGORIA. La via, apagada; el que hi has gastat, ences.
+   El fons era el blanc del paper i sobre la consola quedava com una taca:
+   ara es la mateixa cara fosca que tot i el que es veu es la part plena. */
+.cat-via { display: block; height: 6px; background: var(--h0);
+           border: 1px solid var(--neatline); }
+.cat-via i { display: block; height: 100%; background: var(--utm); }
+.cat-xifra { font-family: var(--mono); font-weight: 600; letter-spacing: -.02em;
+             font-variant-numeric: tabular-nums; text-align: right;
+             font-size: .875rem; white-space: nowrap; }
+.cat-xifra small { display: block; font-size: .6875rem; font-weight: 400; }
+
+/* Mes a mes: ingressos a sobre, despeses a sota. Dues barres i prou. */
+.mesos { display: flex; flex-direction: column; }
+.mes-fila { display: grid; grid-template-columns: 52px minmax(0, 1fr) 92px;
+            align-items: center; gap: var(--e3); min-height: 48px; width: 100%;
+            background: none; border: 0; border-bottom: 1px solid var(--utm-suau);
+            padding: var(--e2) 0; cursor: pointer; font: inherit; color: inherit;
+            text-align: left; }
+.mes-fila:last-child { border-bottom: 0; }
+.mes-nom { font-size: .75rem; color: var(--ink-suau); font-variant-numeric: tabular-nums; }
+.mes-barres { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.mes-barres i { display: block; height: 7px; min-width: 1px; }
+/* Entra i surt. Dos tons de la mateixa rampa i no dos colors diferents:
+   el verd i el vermell no es distingeixen si no els hi veus, i aqui la
+   posicio de la barra ja diu quina es quina. */
+.mes-barres i[data-mena="i"] { background: var(--h5); }
+.mes-barres i[data-mena="d"] { background: var(--h2); }
+.mes-xifra { font-family: var(--mono); letter-spacing: -.02em; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right;
+             font-size: .875rem; }
+
+/* Gestió de categories. Llista curta i formulari a sota: crear-ne una ha de
+   ser tan barat com adonar-te que et falta. */
+.cats-gest { max-height: 34vh; overflow-y: auto; margin-bottom: var(--e4);
+             border: 1px solid var(--utm-suau); }
+.cat-mena { margin: 0; padding: var(--e2) var(--e3); background: var(--paper2);
+            border-bottom: 1px solid var(--utm-suau);
+            letter-spacing: .1em; text-transform: uppercase; }
+.cat-gest { display: flex; align-items: center; gap: var(--e2); min-height: 44px;
+            padding: 0 var(--e2) 0 var(--e3); border-bottom: 1px solid var(--utm-suau); }
+.cat-gest:last-child { border-bottom: 0; }
+.cat-gest-nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+                white-space: nowrap; font-size: .9375rem; }
+
+.cat-nova-fila { display: grid; grid-template-columns: 68px minmax(0, 1fr);
+                 gap: var(--e2); margin: var(--e3) 0; }
+.cat-nova-fila input { min-width: 0; min-height: var(--toc); padding: 0 var(--e2);
+                       font: inherit; background: var(--paper); color: var(--ink);
+                       border: 1px solid var(--neatline); border-radius: var(--r); }
+.camp-emoji { text-align: center; font-size: 1.25rem; }
+.cat-exclou { display: flex; align-items: center; gap: var(--e2); min-height: 44px;
+              margin-bottom: var(--e2); font-size: .875rem; cursor: pointer; }
+.cat-exclou input { width: 20px; height: 20px; flex: none; margin: 0; }
+
+/* El color de la marca, el del mapa. Sense això, la casella marcada surt del
+   verd blau que el navegador porta de sèrie —que no és de cap dels dos temes
+   d'aquí— i la buida, en fosc, queda com un quadre negre sense vora. */
+input[type="checkbox"] { accent-color: var(--utm); }
+.cat-nova [data-crea-cat] { width: 100%; }
+
+/* Pressupost: la barra deixa de mesurar contra la categoria més grossa i
+   passa a mesurar contra el teu límit. Passat el límit, es tenyeix. */
+.cat-via[data-limit] { border-color: var(--corba-mestra); }
+.cat-via i[data-passat] { background: var(--h5); }
+.cat-xifra small { display: block; font-size: .625rem; font-weight: 400;
+                   color: var(--ink-suau); }
+
+/* Recurrents: el dia mana a l'esquerra, perquè el que preguntes és «quan
+   surt», no «quant». */
+.rec-fila { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto;
+            align-items: center; gap: var(--e3); width: 100%; min-height: 56px;
+            background: none; border: 0; border-bottom: 1px solid var(--utm-suau);
+            padding: var(--e2) 0; text-align: left; font: inherit; color: inherit;
+            cursor: pointer; }
+.rec-fila:last-child { border-bottom: 0; }
+.rec-fila[data-apagat] { opacity: .45; }
+.rec-dia { display: flex; align-items: center; justify-content: center;
+           width: 34px; height: 34px; border: 1px solid var(--neatline);
+           font-size: .875rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.rec-cos { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.rec-cos b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec-import { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* EL VIGILANT. El que no ha arribat i el que ha canviat de preu: les dues
+   úniques coses que la llista de moviments no pot dir, perquè una no hi és i
+   l'altra hi és disfressada de línia normal. El fil encès a l'esquerra i la
+   icona: el nivell no pot dependre només del color. */
+.vigila { display: flex; flex-direction: column; gap: var(--e2); }
+.vigila-fila { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto;
+               align-items: center; gap: var(--e2) var(--e3);
+               padding: var(--e3); border: 1px solid var(--neatline);
+               background: var(--paper2); font-size: .875rem; line-height: 1.45; }
+.vigila-fila > span { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.vigila-fila .ic { width: 18px; height: 18px; flex: none; align-self: flex-start;
+                   margin-top: 2px; }
+.vigila-fila[data-mena="falta"] { border-left: 3px solid var(--avis); }
+.vigila-fila[data-mena="falta"] .ic { color: var(--avis); }
+.vigila-fila[data-mena="puja"] { border-left: 3px solid var(--gr); }
+.vigila-fila[data-mena="puja"] .ic { color: var(--gr); }
+.vigila-fila[data-mena="baixa"] { border-left: 3px solid var(--utm); }
+.vigila-fila[data-mena="baixa"] .ic { color: var(--utm); }
+.vigila-fila .btn { grid-column: 2 / -1; justify-self: start; }
+
+/* La fila del recurrent, segons com hagi anat el mes. El que falta crida; el
+   que ha arribat s'apaga una mica, que ja no demana res. */
+.rec-fila[data-estat="falta"] .rec-dia { border-color: var(--avis); color: var(--avis); }
+.rec-fila[data-estat="canviat"] .rec-dia { border-color: var(--gr); color: var(--gr); }
+.rec-fila[data-estat="arribat"] .rec-dia { opacity: .5; }
+
+/* Triant-lo dels moviments no hi ha dia: encara no és un rebut, és un comerç
+   que has vist unes quantes vegades. La columna del dia sobra i la fila torna
+   a ser de dues. */
+.tria-mov .rec-fila { grid-template-columns: minmax(0, 1fr) auto; }
+.tria-mov { max-height: 46vh; overflow-y: auto; }
+
+/* LES PROPOSTES. Dues accions a la mateixa fila i no una: dir que sí obre el
+   formulari per confirmar-lo, i dir que no és un toc a la creu i no s'ha de
+   tornar a preguntar mai més. Amb un sol botó, el «no» no existiria i la
+   llista es quedaria plena de coses que ja has decidit. */
+.prop-fila { display: grid; grid-template-columns: minmax(0, 1fr) 44px;
+             align-items: center; border-bottom: 1px solid var(--utm-suau); }
+.prop-fila:last-child { border-bottom: 0; }
+.prop-cos { display: grid; grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center; gap: var(--e3); min-height: 56px;
+            background: none; border: 0; padding: var(--e2) 0;
+            text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.prop-nom { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.prop-nom b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prop-no { display: flex; align-items: center; justify-content: center;
+           width: 44px; height: 44px; padding: 0; border: 0; background: none;
+           color: var(--ink-suau); cursor: pointer; }
+.prop-no .ic { width: 16px; height: 16px; }
+.prop-no:active { color: var(--gr); }
+@media (hover: hover) and (pointer: fine) {
+  .prop-no:hover { color: var(--gr); }
+}
+
+/* Captura ràpida. El camp és el primer que hi ha i està sempre obert: si has
+   de prémer un botó per obrir-lo, ja has perdut la meitat del que volies
+   apuntar. */
+.camp-captura { display: block; }
+.captura-fila { display: flex; gap: var(--e2); margin-top: var(--e2); }
+.captura-fila input { flex: 1; min-width: 0; min-height: var(--toc); padding: 0 var(--e3);
+                      font: inherit; background: var(--paper); color: var(--ink);
+                      border: 1.5px solid var(--neatline); border-radius: var(--r); }
+.captura-fila .btn { flex: none; padding: 0 var(--e4); }
+
+/* Acabat d'apuntar i encara no ha tornat del servidor. Es veu de seguida
+   —això és tot el sentit— però es distingeix del que ja hi és desat: sense
+   rodona de completar, que encara no tindria a què apuntar. La ratlla que
+   avança per sota diu que hi ha feina en curs sense fer-ne cap escàndol.
+   (La safata ja no hi és: ara el que apuntes cau a la llista principal de
+   Google Tasks, que és la safata de debò i la que també veus al mòbil.) */
+.tasca[data-esperant="1"] { position: relative; opacity: .55; overflow: hidden; }
+.tasca[data-esperant="1"]::after {
+  content: ''; position: absolute; left: 0; bottom: 0; height: 2px; width: 40%;
+  background: var(--ink-suau); animation: esperant-va 1.1s ease-in-out infinite;
+}
+@keyframes esperant-va {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tasca[data-esperant="1"]::after { animation: none; width: 100%; opacity: .4; }
+}
+
+/* =========================================================================
+   EL CALENDARI — la quadrícula UTM del full
+
+   La graella diu ON hi ha coses, no QUÈ hi ha: set columnes en una pantalla
+   de mòbil donen cinquanta píxels per dia i no hi cap cap títol sense
+   mentir. Un punt per cita ja respon la pregunta que fas mirant un mes
+   —quins dies tinc plens—, i el què és a sota, amb tot l'espai.
+   ========================================================================= */
+
+.mes-graella { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+               gap: 1px; background: var(--utm-suau);
+               border: 1.5px solid var(--neatline); }
+
+.mes-cap { background: var(--paper2); text-align: center; padding: var(--e1) 0;
+           font-size: .625rem; letter-spacing: .08em; text-transform: uppercase;
+           color: var(--ink-suau); }
+
+.mes-dia {
+  min-height: 52px; padding: 3px 2px 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  border: 0; background: var(--paper); color: var(--ink); font: inherit;
+}
+.mes-dia .n { font-size: .8125rem; font-variant-numeric: tabular-nums; line-height: 1.1; }
+/* Els dies de l'altre mes hi són perquè la setmana no quedi coixa, no perquè
+   els miris: es queden apagats i no criden. */
+.mes-dia[data-fora="1"] { background: var(--paper2); }
+/* Els dies de fora del mes anaven a 2,25:1: es veien com una taca, no com un
+   número. Segueixen sent clarament secundaris —el fons ja els separa— però
+   ara es poden llegir. */
+.mes-dia[data-fora="1"] .n { color: var(--ink-suau); opacity: 1; }
+.mes-dia[data-avui="1"] { outline: 1px solid var(--utm); outline-offset: -1px; }
+
+/* El dia que MIRES es marca amb el blau de la quadrícula, no amb l'ocre.
+   L'ocre d'aquesta app vol dir «fet» a tot arreu —als hàbits, al full de
+   mes—, i un dia del calendari no es fa: es mira. Fer servir la mateixa
+   tinta per a dues coses diferents és com es perd un sistema de color. */
+.mes-dia[aria-current="date"] { background: var(--utm-suau);
+                                box-shadow: inset 0 -3px 0 var(--utm); }
+/* La xifra torna a la tinta normal. Si el dia que mires és avui, el blau del
+   número quedava blau sobre blau pàl·lid: 3,57, per sota del mínim. El blau
+   ja el posen el fons i la ratlla; el número només ha de llegir-se. */
+.mes-dia[aria-current="date"] .n { font-weight: 700; color: var(--ink); }
+.mes-dia:active { background: var(--utm-suau); }
+
+.mes-dia .punts { display: flex; gap: 2px; min-height: 6px; align-items: center; }
+.mes-dia .punts i { width: 5px; height: 5px; border-radius: 50%;
+                    background: var(--corba-mestra); display: block; }
+/* El de tot el dia és una barra i no un punt: no té hora, i que es distingeixi
+   d'una cita d'un quart estalvia obrir el dia per veure què és. */
+.mes-dia .punts i[data-tot="1"] { width: 10px; border-radius: 1px; }
+
+/* Els títols dins la casella només surten quan la casella és prou gran per
+   ensenyar-los. Al mòbil, els punts; a l'escriptori, el que hi diu. */
+.cal-titols { display: none; }
+
+.dia-cap-cal { margin: var(--e5) 0 var(--e2); }
+.dia-cap-cal .marge { margin: 0; }
+
+.cites { display: flex; flex-direction: column;
+         border: 1px solid var(--neatline); }
+.cita {
+  position: relative; display: flex; align-items: flex-start; gap: var(--e3);
+  width: 100%; min-height: 56px; padding: var(--e3);
+  border: 0; border-bottom: 1px solid var(--utm-suau);
+  background: var(--paper); color: var(--ink); text-align: left; font: inherit;
+}
+.cita:last-child { border-bottom: 0; }
+.cita:active { background: var(--paper2); }
+.cita[data-passat="1"] { opacity: .55; }
+
+.cita-quan { flex: none; width: 52px; display: flex; flex-direction: column;
+             line-height: 1.2; font-variant-numeric: tabular-nums; }
+.cita-quan b { font-size: .9375rem; }
+.cita-quan span { font-size: .75rem; color: var(--ink-suau); }
+.cita-quan .tot { font-size: .6875rem; letter-spacing: .04em;
+                  text-transform: uppercase; color: var(--ink-suau); }
+.cita-cos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cita-titol { font-weight: 600; overflow-wrap: anywhere; }
+.cita-color { flex: none; width: 4px; align-self: stretch; border-radius: 2px; }
+
+.cal-hores { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--e3); }
+
+/* Un enllaç dins d'un text: no és un botó amb marc, és una paraula que fa cosa. */
+.enllac { border: 0; background: none; padding: 0; font: inherit;
+          color: var(--utm); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ------------------------------------------------------ la porta del dia
+   La data de la pantalla d'inici obre la pagina del dia. No es un boto nou
+   —no n'hi havia d'haver cap mes a la fila de sota— sino la data que ja hi
+   era, feta tocable. Es veu que ho es per la subratllada fina, que nomes
+   s'encen quan la prems: si cridés l'atencio sempre, competiria amb les
+   targetes, que son el que has de mirar primer. */
+
+.dia-porta {
+  flex: 1; min-width: 0;
+  display: block; text-align: left;
+  background: none; border: 0; padding: 0;
+  color: inherit; font: inherit;
+  border-bottom: 1px solid transparent;
+  transition: border-color .16s var(--entra), color .16s var(--entra);
+}
+.dia-porta:active { border-bottom-color: var(--utm); color: var(--utm); }
+@media (hover: hover) and (pointer: fine) {
+  .dia-porta:hover { border-bottom-color: var(--fil-viu); }
+}
+
+/* ------------------------------------------------------- la pàgina del dia
+   La consola sencera en una pantalla. A dalt, el nucli: un anell amb el que
+   portes fet del dia. A sota, un panell per àmbit, cadascun amb les seves
+   claus de cantonada i la seva columna de marques a l'esquerra.
+
+   LA COLUMNA DE MARQUES és el que fa que això s'escanegi en comptes de
+   llegir-se: totes les files comencen igual, amb una hora o un signe, i
+   l'ull baixa per la columna sense haver de tornar a l'esquerra cada cop. */
+
+.dia-pagina { max-width: 760px; }
+
+/* el nucli del dia */
+.dia-nucli {
+  display: flex; align-items: center; gap: var(--e4);
+  padding: var(--e4) 0 var(--e5);
+}
+.dia-nucli .quan .d {
+  font-size: 1.375rem; letter-spacing: -.02em; line-height: 1.05; font-weight: 600;
+}
+.dia-nucli .quan .s {
+  font-family: var(--mono); font-size: .625rem; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--ink-suau); margin-top: var(--e1);
+}
+.dia-nucli .quan .c {
+  font-size: .8125rem; color: var(--ink-suau); margin-top: var(--e2);
+}
+
+.dia-bloc-r { margin-bottom: var(--e3); padding: 0; }
+
+.dia-titol-r {
+  width: 100%; display: flex; align-items: center; gap: var(--e2);
+  background: none; border: 0; border-bottom: 1px solid var(--fil-viu);
+  padding: var(--e3); min-height: 44px;
+  font-family: var(--mono); font-size: .625rem; font-weight: 500;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--utm);
+  text-align: left; transition: background-color .16s var(--entra);
+}
+.dia-titol-r .ic { margin-left: auto; width: 14px; height: 14px; opacity: .5; }
+.dia-titol-r:active { background: var(--utm-suau); }
+.dia-bloc-r[data-urgent="1"] .dia-titol-r { color: var(--avis); }
+
+.dia-coses { display: flex; flex-direction: column; }
+
+/* Una fila: marca · text · dada. Sempre en aquest ordre i sempre alineades. */
+.dia-cosa {
+  display: flex; align-items: baseline; gap: var(--e3);
+  padding: var(--e2) var(--e3);
+}
+.dia-cosa + .dia-cosa { border-top: 1px solid var(--utm-suau); }
+
+.dia-marca {
+  font-family: var(--mono); font-size: .6875rem; line-height: 1.5;
+  color: var(--utm); min-width: 40px; flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.dia-cosa[data-urgent="1"] .dia-marca { color: var(--avis); }
+.dia-cosa[data-fet="1"] .dia-marca { color: var(--ink-suau); }
+
+.dia-text { line-height: 1.35; overflow-wrap: anywhere; min-width: 0; }
+/* La columna de la dreta és per a dades curtes —una hora, un import, «Tutoria»,
+   «fa 4 dies»— i per això no parteix ni s'escapça: NO S'ENCONGEIX. Abans sí, i
+   com que qui li prenia l'espai era el títol del costat, una tasca de títol
+   llarg et deixava «Tutor…» al costat: l'etiqueta curta pagava el text llarg
+   d'un altre. Ara el títol parteix, que és el que sap fer.
+   El sostre del 48% es queda per al diari, que hi posa un tros del que has
+   escrit: allò sí que és llarg de debò i s'acaba amb punts en comptes
+   d'empènyer la pàgina cap a fora. */
+.dia-cosa .menut { margin-left: auto; white-space: nowrap;
+                   flex: 0 0 auto; min-width: 0; max-width: 48%;
+                   overflow: hidden; text-overflow: ellipsis;
+                   font-family: var(--mono); font-size: .6875rem; }
+.dia-cosa[data-fet="1"] .dia-text { color: var(--ink-suau); }
+.dia-cosa[data-urgent="1"] .dia-text { font-weight: 600; }
+
+/* La tira d'hàbits: una barra per hàbit, alçada = com el portes.
+   Substitueix una llista de noms que no es llegia d'una ullada. */
+.dia-tira { display: flex; gap: 3px; padding: var(--e3); }
+.dia-tira i {
+  flex: 1; height: 26px; background: var(--h0); position: relative;
+  border-radius: 1px;
+}
+.dia-tira i::after {
+  content: ""; position: absolute; inset: auto 0 0 0;
+  background: var(--utm); height: var(--h, 3px);
+}
+.dia-tira i[data-buit="1"]::after { background: var(--corba-mestra); height: 2px; }
+
+@media (min-width: 900px) {
+  .dia-pagina { max-width: 980px; }
+  /* A l'escriptori els panells van de dos en dos: llegir una columna de
+     760 px al mig d'una pantalla de 1900 era desaprofitar-la sencera. */
+  .dia-graella { display: grid; grid-template-columns: 1fr 1fr; gap: var(--e3); align-items: start; }
+  .dia-graella > * { min-width: 0; margin-bottom: 0; }
+  .dia-nucli { padding-top: var(--e5); }
+  .dia-nucli .quan .d { font-size: 1.75rem; }
+}
+
+/* =========================================================================
+   EL DIARI — el quadern de camp del marge del full
+
+   El que escrius tu i el que t'escriu ell van a la mateixa línia de temps,
+   però no s'han de confondre mai: el teu va sobre el paper, el seu va amb
+   la barra del marge al costat. Es distingeixen d'una ullada sense haver de
+   llegir cap etiqueta.
+   ========================================================================= */
+
+.dia-cap { display: flex; align-items: center; justify-content: space-between;
+           gap: var(--e2); margin-bottom: var(--e2); }
+.dia-cap .marge { margin: 0; }
+
+#d-text {
+  width: 100%; min-height: 140px; padding: var(--e3);
+  border: 1.5px solid var(--neatline); border-radius: var(--r);
+  background: var(--paper); color: var(--ink); line-height: 1.55;
+  resize: vertical; -webkit-appearance: none; appearance: none;
+}
+#d-text:focus { border-color: var(--utm); }
+#d-text:focus-visible { outline: 3px solid var(--utm); outline-offset: 1px; }
+#d-text::placeholder { color: var(--ink-suau); opacity: 1; }
+
+.anim { margin-top: var(--e3); }
+.anim .marge { display: block; margin-bottom: var(--e2); }
+.anim-tria { display: flex; gap: var(--e2); }
+.anim-tria button {
+  flex: 1; min-height: 44px; font: inherit; font-weight: 600;
+  background: transparent; color: var(--ink-suau);
+  border: 1px solid var(--neatline); border-radius: var(--r);
+}
+.anim-tria button[aria-pressed="true"] {
+  background: var(--fet); border-color: var(--fet-vora); color: var(--sobre-fet);
+}
+
+.dia-desa { display: flex; align-items: center; justify-content: space-between;
+            gap: var(--e3); margin-top: var(--e3); }
+.dia-desa .btn { flex: none; padding: 0 var(--e4); }
+
+.dia-bloc { margin-top: var(--e4); }
+/* És un botó: porta al diari d'aquell dia. Feia 26 px d'alt i s'havia
+   d'encertar; ara en fa 44, que és el mínim per a un dit. */
+.dia-titol {
+  display: flex; align-items: center; width: 100%; min-height: 44px;
+  text-align: left; padding: 0; margin-bottom: var(--e1);
+  border: 0; background: none; color: var(--ink-suau);
+  font-size: .75rem; letter-spacing: .1em; text-transform: uppercase;
+}
+.dia-titol:active { color: var(--ink); }
+
+.apunt { padding: var(--e3) 0; border-top: 1px solid var(--utm-suau); }
+.apunt-text { line-height: 1.6; overflow-wrap: anywhere; }
+.apunt-qui { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase;
+             color: var(--ink-suau); margin-bottom: var(--e2); }
+.apunt-anim { font-size: .8125rem; color: var(--ink-suau); margin-bottom: 2px; }
+
+/* El que ha escrit ell, amb la barra del marge: no es confon amb el teu. */
+.apunt[data-tipus="resum"], .apunt[data-tipus="revisio"] {
+  border-left: 2px solid var(--neatline); padding-left: var(--e3);
+  color: var(--ink-suau);
+}
+.apunt[data-tipus="revisio"] { border-left-color: var(--utm); }
+.apunt[data-tipus="revisio"] .apunt-qui { color: var(--utm); }
+
+/* «Fetes» i el botó de buidar-les, a la mateixa línia: el títol mana i el
+   botó hi és sense demanar atenció, perquè buidar-les no és el que véns a fer. */
+.fetes-titol { display: flex; align-items: baseline; justify-content: space-between; gap: var(--e3); }
+.fetes-titol .marge { margin: 0; }
+.btn-menut { /* 44 px encara que sembli petit: la mida del dit no canvia perque el
+     boto sigui secundari. El que es fa mes petit es la lletra, no l area. */
+  min-height: 44px; padding: 0 var(--e2); font-size: .75rem;
+             letter-spacing: .04em; text-decoration: underline;
+             text-underline-offset: 3px; }
+
+/* Una tasca: la casella per completar-la a l'esquerra, perquè és el que fas
+   més sovint i ha de caure sota el polze. */
+.tasques { display: flex; flex-direction: column; }
+.tasca { display: flex; align-items: flex-start; gap: var(--e3);
+         border-bottom: 1px solid var(--utm-suau); padding: var(--e2) 0;
+         transition: opacity .2s ease; }
+.tasca:last-child { border-bottom: 0; }
+.tasca[data-fent="1"] { opacity: .4; }
+.tasca[data-feta] .tasca-text { text-decoration: line-through; color: var(--ink-suau); }
+/* LA RODONA DE COMPLETAR ÉS EL QUE MÉS ES TOCA DE TOTA LA PANTALLA, i feia
+   26 px. La rodona dibuixada es queda com era —una diana de 44 no és més
+   fàcil de llegir, és més gran i prou— però el BOTÓ ara fa 44×44 i la
+   centra. El que creix és on pots posar el dit, no el dibuix. */
+.tasca-marca { flex: none; width: 44px; height: 44px; padding: 0;
+               border: 0; background: transparent;
+               display: flex; align-items: center; justify-content: center; }
+.tasca-marca::before {
+  content: ''; width: 26px; height: 26px; border-radius: 50%;
+  border: 1.5px solid var(--neatline); background: transparent;
+  transition: background-color .2s var(--sortida), border-color .2s var(--sortida);
+}
+.tasca-marca[data-fet="1"]::before { background: var(--h1); border-color: var(--h1); }
+.tasca-marca:active::before { border-color: var(--utm); }
+.tasca-cos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px;
+             min-height: 44px; justify-content: center; background: none; border: 0;
+             padding: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.tasca-text { overflow-wrap: anywhere; }
+.tasca[data-vencuda] .menut { color: var(--avis); }
+
+/* EL PRIMER PAS D'UNA TASCA ENCALLADA.
+   No és text petit d'acompanyament: quan hi és, és la línia que has de poder
+   llegir. Per això va en color viu i no en `--ink-suau` com la resta del peu
+   —el títol de la tasca és el que et fa apartar la vista, i això és el que sí
+   que pots fer ara—. La fletxa el separa del títol sense afegir cap paraula. */
+.tasca-pas {
+  display: block; margin-top: 2px;
+  font-size: .8125rem; line-height: 1.35; color: var(--utm);
+  overflow-wrap: anywhere;
+}
+.tasca-pas::before { content: '→ '; }
+
+/* Patrimoni. La data mana tant com la xifra: un valor de fa dos mesos no és el
+   que tens, és el que tenies. Els que fa temps que no toques es marquen. */
+.act-fila { display: grid; grid-template-columns: minmax(0, 1fr) 56px auto;
+            align-items: center; gap: var(--e3); width: 100%; min-height: 60px;
+            background: none; border: 0; border-bottom: 1px solid var(--utm-suau);
+            padding: var(--e2) 0; text-align: left; font: inherit; color: inherit;
+            cursor: pointer; }
+.act-fila:last-child { border-bottom: 0; }
+.act-fila .menut[data-vell] { color: var(--avis); }
+.espurna { width: 56px; height: 28px; overflow: visible; }
+.espurna polyline { fill: none; stroke: var(--ink-suau); stroke-width: 1.5;
+                    stroke-linejoin: round; stroke-linecap: round;
+                    vector-effect: non-scaling-stroke; }
+.espurna polyline[data-puja="1"] { stroke: var(--h1); }
+.espurna polyline[data-puja="0"] { stroke: var(--h5); }
+
+/* Safata de revisió. Una fila per DECISIÓ, no per moviment: dotze compres a
+   l'estanc són una sola targeta. En triar, la fila s'apaga i se'n va, i el que
+   queda és el que et falta. */
+.revisar { display: flex; flex-direction: column; gap: var(--e3); }
+.rev-fila { border: 1px solid var(--neatline); padding: var(--e3);
+            transition: opacity .25s ease, transform .25s var(--sortida); }
+.rev-fila[data-fent="1"] { opacity: .5; }
+.rev-fila[data-fet="1"] { opacity: 0; transform: translateX(24px); }
+.rev-cap { display: flex; align-items: baseline; gap: var(--e2); margin-bottom: 2px; }
+.rev-cap b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rev-cap span { white-space: nowrap; }
+.rev-fila select { width: 100%; min-height: var(--toc); margin-top: var(--e3);
+                   padding: 0 var(--e2); font: inherit; background: var(--paper);
+                   color: var(--ink); border: 1px solid var(--neatline); border-radius: var(--r); }
+
+/* Despesa o ingrés: la primera decisió, i la que canvia les categories. */
+.tipus-tria { display: flex; border: 1px solid var(--neatline); margin-bottom: var(--e4); }
+.tipus-tria button { flex: 1; min-height: 44px; background: none; border: 0;
+                     border-right: 1px solid var(--neatline); font: inherit;
+                     color: var(--ink-suau); cursor: pointer; }
+.tipus-tria button:last-child { border-right: 0; }
+.tipus-tria button[aria-pressed="true"] { background: var(--ink); color: var(--paper); font-weight: 700; }
+
+/* L'import mana: és l'únic camp que sempre has d'omplir. */
+.camp-import { font-size: 1.75rem !important; font-weight: 700; text-align: center; }
+
+.sugg { display: flex; flex-wrap: wrap; gap: var(--e2); margin: 0 0 var(--e3); }
+.sugg:empty { display: none; }
+.sugg button { min-height: 40px; padding: 0 var(--e3); background: none; font: inherit;
+               font-size: .8125rem; border: 1px solid var(--neatline); color: var(--ink-suau);
+               border-radius: var(--r); cursor: pointer; }
+.sugg button:active { color: var(--ink); border-color: var(--ink); }
+
+.form-ajustos label { display: block; margin-bottom: var(--e3); }
+/* La casella amb la seva etiqueta al costat. `.form-ajustos label` és més
+   específic que `.cat-exclou` i li posava `display:block`, i llavors el buit
+   entre la casella i el text desapareixia: quedaven enganxats. */
+.form-ajustos label.cat-exclou { display: flex; align-items: center; gap: var(--e2); }
+
+/* `:not([type="checkbox"])` I `textarea`, i totes dues coses són arreglos.
+   ---------------------------------------------------------------------
+   Sense el `:not`, aquesta regla —que va més avall al full i per tant guanya
+   a igualtat de pes— convertia qualsevol casella de verificació d'un tauler
+   en un rectangle de 48 px d'alt i amplada sencera. Es veia als taulers de
+   tasques («Prioritària») i del calendari («Tot el dia»): un bloc fosc surant
+   sobre l'etiqueta.
+   I el `textarea` no hi era: les notes es pintaven sense estil, petites i
+   desalineades, al costat de camps que sí que en tenien. */
+.form-ajustos input:not([type="checkbox"]),
+.form-ajustos select,
+.form-ajustos textarea {
+  width: 100%; min-height: var(--toc);
+  margin-top: var(--e1); padding: var(--e2) var(--e3);
+  font: inherit; background: var(--paper);
+  color: var(--ink); border: 1px solid var(--neatline);
+  border-radius: var(--r); -webkit-appearance: none; appearance: none;
+}
+.form-ajustos input:not([type="checkbox"]) { padding: 0 var(--e3); }
+.form-ajustos textarea { line-height: 1.5; resize: vertical; }
+/* El ring de teclat, a part: apagar-lo deixava qui va amb tabulador sense
+   saber on es, i el canvi de color d'una vora d'un pixel no compta. */
+.form-ajustos input:focus-visible, .form-ajustos select:focus-visible,
+.form-ajustos textarea:focus-visible { outline: 3px solid var(--utm); outline-offset: 1px; }
+.form-ajustos input:focus, .form-ajustos select:focus, .form-ajustos textarea:focus {
+  border-color: var(--utm);
+}
+.form-ajustos hr { border: 0; border-top: 3px double var(--neatline); margin: var(--e4) 0; }
+
+/* Els botons d'un tauler van un sota l'altre i a amplada sencera. Un «Desa» i
+   un «Treu-la» de costat, a més d'estrets, posen a la mateixa alçada i amb la
+   mateixa pinta la cosa que vols fer i la que no vols fer mai sense pensar. */
+.form-ajustos > button { width: 100%; }
+
+/* -------------------------------------------------------------------- modal */
+
+.fosc { position: fixed; inset: 0; z-index: 50; background: rgba(14,18,20,.6);
+        display: flex; align-items: flex-end; justify-content: center;
+        opacity: 0; pointer-events: none; transition: opacity .2s linear; }
+.fosc[data-obert="1"] { opacity: 1; pointer-events: auto; }
+.modal { width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto;
+         background: var(--paper); border: 1.5px solid var(--neatline); border-bottom: 0;
+         padding: var(--e4) var(--e4) calc(var(--e5) + env(safe-area-inset-bottom, 0px));
+         transform: translateY(100%); transition: transform .32s var(--sortida); }
+.fosc[data-obert="1"] .modal { transform: translateY(0); }
+.modal-cap { display: flex; align-items: center; gap: var(--e3);
+             margin-bottom: var(--e4); padding-bottom: var(--e3);
+             border-bottom: 3px double var(--neatline); }
+.modal-cap h2 { flex: 1; }
+@media (min-width: 900px) {
+  .fosc { align-items: center; }
+  .modal { border-bottom: 1.5px solid var(--neatline); max-height: 84vh; }
+}
+
+/* ==========================================================================
+   EL VISOR
+
+   Quan li demanes una cosa que es POT ENSENYAR —«ensenya'm la gràfica del
+   tabac»—, contestar-la amb text seria descriure-la en comptes de donar-la.
+   S'obre un plafó a sobre i allà hi ha la cosa.
+
+   No és un modal nou: és el de sempre, vestit de consola. Reaprofita el que
+   ja estava fet i provat —el focus que hi entra i torna, el fons que tanca,
+   la tecla d'escapada— i només canvia com es veu. Un segon sistema de
+   finestres seria un segon lloc on arreglar els mateixos errors.
+   ========================================================================== */
+
+.modal[data-visor="1"] {
+  max-width: 420px;
+  background: linear-gradient(180deg, #0b1c28, #071019);
+  border: 1px solid #1d4459; border-bottom: 1px solid #1d4459;
+  color: #dff6f9;
+  padding: var(--e3) var(--e3) calc(var(--e4) + env(safe-area-inset-bottom, 0px));
+  /* Entra creixent i pujant. Res no apareix mai del no-res: una cosa que
+     surt de mida zero no s'assembla a res que passi al món. */
+  transform: translateY(14px) scale(.96);
+  transition: transform .3s var(--sortida), opacity .22s var(--sortida);
+  opacity: 0;
+}
+.fosc[data-obert="1"] .modal[data-visor="1"] { transform: none; opacity: 1; }
+
+.modal[data-visor="1"] .modal-cap {
+  border-bottom: 1px solid #12293a; margin-bottom: var(--e3); padding-bottom: var(--e2);
+}
+.modal[data-visor="1"] .modal-cap h2 {
+  font-family: var(--mono); font-size: .6875rem; letter-spacing: .16em;
+  text-transform: uppercase; font-weight: 400; color: #dff6f9;
+}
+.modal[data-visor="1"] .btn-fantasma { color: #6f93a6; }
+
+/* Les claus de la consola, i s'encenen DESPRÉS del plafó: primer arriba, i
+   llavors es reconeix com a part d'aquesta màquina. */
+.visor-clau { position: absolute; width: 12px; height: 12px; border: 0 solid var(--cian, #4fd6e0);
+              opacity: 0; transition: opacity .3s var(--sortida) .16s; }
+.fosc[data-obert="1"] .visor-clau { opacity: 1; }
+.visor-clau.d1 { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+.visor-clau.d2 { top: -1px; right: -1px; border-top-width: 2px; border-right-width: 2px; }
+.visor-clau.d3 { bottom: -1px; left: -1px; border-bottom-width: 2px; border-left-width: 2px; }
+.visor-clau.d4 { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+
+/* ---------------------------------------------------------- les quatre formes
+   Vegeu `ui_visor.html`: llista, línia, barres i taula. Amb aquestes quatre
+   s'ensenya tot el que aquesta app té, i per això no n'hi ha cap més. */
+
+.vis-llista { margin: 0; padding: 0; list-style: none; }
+.vis-llista li { display: flex; gap: var(--e2); align-items: baseline;
+                 padding: 5px 0; line-height: 1.45; }
+.vis-llista li + li { border-top: 1px solid rgba(18, 41, 58, .8); }
+/* Sempre la mateixa amplada: l'ull ha de poder baixar sense tornar enrere. */
+.vis-marca { flex: none; width: 3.1em; font-family: var(--mono); font-size: .6875rem;
+             color: #7fa3b3; }
+.vis-cos { flex: 1; min-width: 0; }
+.vis-text { display: block; font-size: .9375rem; overflow-wrap: anywhere; }
+.vis-llista .menut { display: block; margin-top: 1px; }
+.vis-llista li[data-fet="1"] .vis-text { color: #7fa3b3; }
+.vis-llista li[data-urgent="1"] .vis-marca { color: var(--alerta, #ef5f52); }
+
+.vis-linia { display: block; width: 100%; height: 112px; }
+.vis-traç { fill: none; stroke: var(--cian, #4fd6e0); stroke-width: 2;
+            stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.vis-punt { fill: #0b1c28; stroke: var(--cian, #4fd6e0); stroke-width: 1.4; }
+.vis-ara { fill: var(--cian, #4fd6e0); stroke: none; }
+.vis-eix { display: flex; justify-content: space-between; margin-top: 4px;
+           font-family: var(--mono); font-size: .625rem; color: #7fa3b3; }
+
+/* Barres horitzontals: les etiquetes són paraules, i en vertical caldria
+   girar-les. Un text girat no es llegeix, es desxifra. */
+.vis-barres { display: flex; flex-direction: column; gap: 7px; }
+.vis-barra { display: grid; grid-template-columns: 8.5em 1fr auto; gap: var(--e2);
+             align-items: center; }
+.vis-barra-nom { font-size: .8125rem; overflow: hidden; text-overflow: ellipsis;
+                 white-space: nowrap; }
+.vis-barra-riu { height: 8px; background: rgba(18, 41, 58, .9); display: block; }
+.vis-barra-riu i { display: block; height: 100%; background: var(--cian, #4fd6e0); }
+.vis-barra-val { font-family: var(--mono); font-size: .6875rem; color: #b6ccd3;
+                 font-variant-numeric: tabular-nums; }
+
+.vis-taula-fora { overflow-x: auto; }
+.vis-taula { width: 100%; border-collapse: collapse; font-size: .8125rem; }
+.vis-taula th { text-align: left; font-family: var(--mono); font-size: .625rem;
+                letter-spacing: .1em; text-transform: uppercase; color: #7fa3b3;
+                font-weight: 400; padding: 0 var(--e2) 5px 0; }
+.vis-taula td { padding: 5px var(--e2) 5px 0; border-top: 1px solid rgba(18, 41, 58, .8);
+                font-variant-numeric: tabular-nums; }
+
+/* El peu d'un plafó: d'on surt el que veus i què n'ha canviat. Dues xifres i
+   prou —una a cada punta— perquè el dibuix no quedi flotant sense context. */
+.visor-peu {
+  display: flex; justify-content: space-between; gap: var(--e2); margin-top: var(--e2);
+  font-family: var(--mono); font-size: .6875rem; letter-spacing: .04em; color: #8fb0bd;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal[data-visor="1"] { transition: none; }
+  .visor-clau { transition: none; }
+}
+
+.selector-data { display: flex; align-items: center; gap: var(--e2); }
+.selector-data .data { flex: 1; text-align: center; }
+
+.tira { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: var(--e3); }
+.tira .xifra-gran { font-size: 1.75rem; line-height: 1; font-weight: 700;
+                    font-style: italic; color: var(--corba-mestra); }
+
+/* =========================================================================
+   DISPOSICIÓ AMPLA — ha d'anar AL FINAL del full
+   Si aquest bloc va abans de les regles base, la cascada les barreja: el
+   `position` es perd però el `top` sobreviu, i la navegació es converteix en
+   una capa fixa de pantalla sencera que tapa el contingut. Va passar.
+   ========================================================================= */
+
+@media (min-width: 900px) {
+  /* El cos passa a columna per poder posar la navegació a dalt sense
+     moure-la del final del document (que és on ha de ser per al teclat). */
+  body { display: flex; flex-direction: column; min-height: 100vh; padding-bottom: var(--e6); }
+  #sense-xarxa, #pendents { order: -2; }
+  .nav { order: -1; }
+  main#vista { order: 0; flex: 1; display: flex; flex-direction: column; }
+  /* La capsa de la vista ha de créixer com creixia la vista quan pintava
+     directament a `#vista`. Vegeu `App.ves`: ara cada render té la seva. */
+  .vista-capsa { flex: 1; min-height: 0; }
+
+  .pagina { padding: var(--e5) var(--e5) var(--e7); }
+  .dues-columnes { grid-template-columns: minmax(320px, 380px) 1fr; align-items: start; }
+
+  /* A l'escriptori hi cap tot alhora: xifres i tancament a l'esquerra, els
+     àpats a la dreta. Al mòbil manen l'ordre i l'espai; aquí, la vista de
+     conjunt.
+
+     `grid-template-rows: auto 1fr` és el que enganxa el tancament just sota
+     les xifres. Amb files automàtiques, la columna dels àpats —que és molt
+     més alta— repartia l'alçada entre les dues files i el tancament quedava
+     surant al mig de l'esquerra, lluny de tot. */
+  .nutri { display: grid; grid-template-columns: minmax(280px, 340px) 1fr;
+           grid-template-areas: "dalt apats" "tanca apats";
+           grid-template-rows: auto 1fr;
+           align-items: start; column-gap: var(--e6); row-gap: var(--e5);
+           max-width: 1100px; margin: 0 auto; }
+  .nutri-dalt  { grid-area: dalt; }
+  .nutri-apats { grid-area: apats; }
+  .nutri-tanca { grid-area: tanca; }
+
+  /* La capçalera segueix la mateixa amplada que el contingut. Estirada a tota
+     la pantalla, la data quedava al centre de 1.900 px i els botons a dos
+     pams de distància, sense relació amb res del que hi ha a sota. */
+  .capcalera-nutri { padding: var(--e3) var(--e5) 0; }
+  .capcalera-nutri .capcalera-fila,
+  .capcalera-nutri .segments { max-width: 1100px; margin: 0 auto; }
+  .capcalera-nutri .segments { margin-top: var(--e3); }
+
+  /* -----------------------------------------------------------------------
+     EL CALENDARI A L'ESCRIPTORI
+
+     Aquí la peça grossa és la graella, no el panell: al revés que a
+     nutrició. Amb les classes d'allà, el mes quedava encaixat en 340 px al
+     racó d'una pantalla de 1.900 i la resta era negre.
+
+     I les caselles deixen de ser un quadradet amb punts: hi caben els títols,
+     i llavors el mes es LLEGEIX d'un cop en comptes d'obligar-te a anar
+     tocant dies per saber què hi ha.
+     ----------------------------------------------------------------------- */
+  .cal-pagina {
+    display: grid; grid-template-columns: 1fr minmax(300px, 380px);
+    align-items: start; gap: var(--e6);
+    max-width: 1500px; margin: 0 auto;
+  }
+
+  .mes-graella { grid-auto-rows: minmax(112px, auto); }
+  .mes-dia { align-items: stretch; gap: 4px; padding: var(--e2); }
+  .mes-dia .n { font-size: 1rem; text-align: left; }
+  .mes-dia .punts { display: none; }
+
+  .cal-titols { display: flex; flex-direction: column; gap: 2px;
+                overflow: hidden; text-align: left; }
+  .cal-cita {
+    font-size: .75rem; line-height: 1.25; padding: 1px 4px;
+    border-left: 3px solid var(--seu, var(--corba-mestra));
+    background: var(--paper2); color: var(--ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cal-cita b { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* EL DE TOT EL DIA ES DISTINGEIX PER LA BARRA, NO PER OMPLIR-SE.
+     Omplert amb el color del calendari donava 3,8 amb el text a sobre, i no
+     es pot arreglar triant millor: aquests colors els posa Google i poden ser
+     qualsevol cosa, o sigui que no hi ha cap color de lletra que hi vagi bé
+     sempre. Amb la barra gruixuda el text sempre va sobre un fons conegut, i
+     de fet la pista més forta ja hi era: els que tenen hora la porten davant
+     i aquests no. */
+  .cal-cita[data-tot="1"] { border-left-width: 7px; font-weight: 600; }
+  .cal-mes-n { font-size: .6875rem; color: var(--ink-suau); padding-left: 4px; }
+
+  .mes-dia[aria-current="date"] .cal-cita { background: var(--paper); }
+  .mes-dia[data-fora="1"] .cal-titols { opacity: .45; }
+
+  .dia-cap-cal { margin: 0 0 var(--e2); }
+
+  /* La capçalera segueix l'amplada del contingut, com a la resta. */
+  .capcalera-nutri:has(+ .pagina .cal-pagina) .capcalera-fila { max-width: 1500px; }
+
+  /* El formulari en una sola tira: a l'escriptori hi ha amplada de sobres i
+     no cal fer-lo baixar set files. */
+  .apat-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .apat-form select, .apat-form [data-nom] { grid-column: 1 / -1; }
+  .apat-form [data-afegeix] { grid-column: 1 / 3; }
+  .apat-form [data-desa-aliment] { grid-column: 3 / -1; }
+
+  .nav {
+    position: sticky; top: 0; bottom: auto;
+    flex-direction: row; justify-content: center; gap: var(--e6);
+    border-top: 0; border-bottom: 3px double var(--neatline);
+    padding-bottom: 0;
+  }
+  .nav a { flex: none; flex-direction: row; gap: var(--e2); min-height: 52px; font-size: .8125rem; }
+
+  h1 { font-size: 1.875rem; }
+  .franja { min-height: 84px; }
+  .cella { height: 30px; }
+}
+
+@media (min-width: 1200px) {
+  .reixa tbody th { max-width: 260px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* ==========================================================================
+   SEGUIMENT FÍSIC
+
+   La pantalla té una jerarquia molt clara i el CSS l'ha de respectar: primer
+   el veredicte, després per què, després la forma al llarg del temps. Tot el
+   que hi ha aquí surt dels tokens que ja hi ha; no hi entra cap color nou.
+   ========================================================================== */
+
+/* LA CRIDA DE LA SETMANA PENDENT. És el motiu pel qual existeix el mòdul, o
+   sigui que quan hi és mana per sobre de tot i es veu que es pot tocar. */
+.seg-reclama {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  width: 100%; margin-bottom: var(--e3); padding: var(--e3);
+  border: 1px solid var(--avis); background: color-mix(in srgb, var(--avis) 14%, var(--paper2));
+  color: var(--ink); text-align: left;
+  border-left: 3px solid var(--avis);
+  transition: background-color .16s var(--entra), transform .12s var(--entra);
+}
+.seg-reclama b { font-size: .9375rem; }
+/* La tinta apagada dona 3,69:1 sobre aquest fons ambre, per sota del mínim i
+   en una app que es fa servir a fora amb sol. Sobre aquesta superfície va amb
+   la tinta normal una mica retirada, que passa de 4,5 sense cridar. */
+.seg-reclama span { font-size: .8125rem;
+                    color: color-mix(in srgb, var(--ink) 78%, transparent); }
+.seg-reclama:active { transform: scale(.99); }
+
+/* EL VEREDICTE. El fil s'encén segons com ha anat, però el color no hi va mai
+   sol: el titular ja ho diu amb paraules. */
+.seg-veredicte[data-mena="be"]   { border-color: var(--utm); }
+.seg-veredicte[data-mena="avis"] { border-color: var(--avis); }
+.seg-veredicte h2 { font-size: 1.25rem; }
+
+/* QUATRE XIFRES, I AL MÒBIL DUES FILES DE DUES.
+   Quatre columnes en una pantalla de 360 px deixen 80 px per xifra, i «82,5 cm»
+   en mono de 22 px no hi cap: o es parteix o s'encongeix, i encongir-lo el
+   trauria de la jerarquia que aquesta targeta té. Dues i dues hi caben senceres
+   i les quatre segueixen pesant igual, que és el que importa. */
+.seg-xifres { display: grid; grid-template-columns: repeat(2, 1fr);
+              gap: var(--e3) var(--e2);
+              border-top: 1px solid var(--neatline); padding-top: var(--e3); }
+@media (min-width: 420px) { .seg-xifres { grid-template-columns: repeat(4, 1fr); } }
+.seg-xifres > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.seg-xifres b { font-family: var(--mono); font-size: 1.375rem; font-weight: 600;
+                line-height: 1; font-variant-numeric: tabular-nums; }
+.seg-xifres b i { font-style: normal; font-size: .6875rem; color: var(--ink-suau);
+                  margin-left: 3px; font-weight: 400; }
+.seg-delta { font-family: var(--mono); font-size: .6875rem; color: var(--ink-suau);
+             font-variant-numeric: tabular-nums; }
+
+/* La càrrega de la setmana, sota les quatre xifres del cos. No és una mesura
+   més: és el que hi ha fet, i per això va separada per la línia i porta fletxa
+   —d'aquí se'n va a la pantalla que la té sencera—. */
+.seg-carrega { display: flex; align-items: center; gap: var(--e2);
+               width: 100%; margin-top: var(--e3); padding: var(--e2) 0 0;
+               border: 0; border-top: 1px solid var(--neatline);
+               background: transparent; color: var(--ink); text-align: left;
+               font-size: .8125rem; }
+.seg-carrega .ic { flex: none; color: var(--utm); }
+.seg-carrega > span:first-of-type { flex: 1; min-width: 0;
+               font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.seg-carrega .menut { flex: none; }
+.seg-carrega:active { opacity: .7; }
+@media (hover: hover) and (pointer: fine) {
+  .seg-carrega:hover .menut { color: var(--utm); }
+}
+
+/* ELS AVISOS. Cadascun amb la seva icona, perquè el nivell no depengui només
+   del color: qui no distingeixi el cian de l'ambre ha de poder llegir-ho. */
+.seg-avisos { display: flex; flex-direction: column; gap: var(--e2); margin: var(--e3) 0; }
+.seg-avis { display: flex; gap: var(--e2); align-items: flex-start; margin: 0;
+            padding: var(--e3); border: 1px solid var(--neatline);
+            background: var(--paper2); font-size: .875rem; line-height: 1.45; }
+.seg-avis .ic { width: 18px; height: 18px; flex: none; margin-top: 2px; }
+.seg-avis[data-n="avis"] { border-left: 3px solid var(--avis); }
+.seg-avis[data-n="avis"] .ic { color: var(--avis); }
+.seg-avis[data-n="be"]   { border-left: 3px solid var(--utm); }
+.seg-avis[data-n="be"] .ic { color: var(--utm); }
+.seg-avis[data-n="info"] .ic { color: var(--ink-suau); }
+
+.seg-diu { margin: var(--e3) 0; padding: var(--e3); border: 1px solid var(--utm-suau);
+           border-left: 3px solid var(--utm); background: var(--paper2);
+           font-size: .9375rem; line-height: 1.5; white-space: pre-wrap; }
+
+/* LES GRÀFIQUES. Una línia i prou: el que has de veure és la forma. */
+.seg-grafiques { display: grid; gap: var(--e3); margin-top: var(--e4); }
+@media (min-width: 700px) { .seg-grafiques { grid-template-columns: 1fr 1fr; } }
+.seg-graf { display: block; width: 100%; height: 96px; margin-top: var(--e2); overflow: visible; }
+.seg-linia { fill: none; stroke: var(--utm); stroke-width: 1.5;
+             vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.seg-punt  { fill: var(--paper2); stroke: var(--utm); stroke-width: 1.5;
+             vector-effect: non-scaling-stroke; }
+.seg-ara   { fill: var(--utm); }
+.seg-eix { display: flex; justify-content: space-between; margin-top: var(--e1);
+           font-family: var(--mono); font-size: .625rem; color: var(--ink-suau);
+           text-transform: uppercase; letter-spacing: .06em; }
+
+/* LES FOTOS, PER ANGLE. Una foto sola no diu res; la de fa un mes al costat,
+   sí. Per això la tira és horitzontal i el que s'alinea és el mateix angle.
+
+   I comencen amagades. El títol i el botó d'obrir-les van a la mateixa fila
+   perquè el que hi ha aquí sota és una decisió, no una secció més: o les vols
+   veure o no. */
+.seg-fotos { margin-top: var(--e4); }
+.seg-fotos-cap { display: flex; align-items: center; justify-content: space-between;
+                 gap: var(--e2); margin-bottom: var(--e2); }
+.seg-fotos-cap .marge { margin: 0; }
+.seg-fotos #seg-ullada:not(:empty) { margin-bottom: var(--e2); }
+.seg-fotos [data-mira] { margin-bottom: var(--e3); }
+#seg-tires:not([hidden]) { margin-bottom: var(--e2); }
+.seg-angle { margin-bottom: var(--e3); }
+.seg-tira { display: flex; gap: var(--e2); overflow-x: auto; padding-bottom: var(--e1);
+            scroll-snap-type: x mandatory; }
+.seg-tira figure { margin: 0; flex: none; width: 118px; scroll-snap-align: start; }
+.seg-tira img { display: block; width: 118px; height: 158px; object-fit: cover;
+                border: 1px solid var(--neatline); background: var(--paper2); }
+.seg-tira figcaption { margin-top: 3px; font-family: var(--mono); font-size: .625rem;
+                       color: var(--ink-suau); text-transform: uppercase; letter-spacing: .06em; }
+/* EL BOTO DE TREURE UNA FOTO. A la cantonada i petit de veure, pero de 32
+   pixels de debo: prou per encertar-lo amb el dit i prou per no encertar-lo
+   sense voler mentre passes la tira. Sobre fosc sempre, que a sota hi ha una
+   fotografia i no es pot saber de quin color sera. */
+.seg-tira figure { position: relative; }
+.seg-treu {
+  position: absolute; top: 3px; right: 3px;
+  width: 32px; height: 32px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 0;
+  background: rgba(5, 8, 11, .74); color: #fff;
+  transition: background-color .16s var(--entra), transform .12s var(--entra);
+}
+.seg-treu .ic { width: 15px; height: 15px; }
+/* Els 44 del dit, guanyats per fora, com a `.mem-fora`. El botó ha de seguir
+   sent una creueta petita damunt de la foto, i el dit no ho sap. */
+.seg-treu::after { content: ''; position: absolute; top: 50%; left: 50%;
+                   width: 44px; height: 44px; transform: translate(-50%, -50%); }
+.seg-treu:active { background: var(--gr); transform: scale(.92); }
+@media (hover: hover) and (pointer: fine) {
+  .seg-treu:hover { background: var(--gr); }
+}
+
+.seg-puja { display: flex; gap: var(--e2); flex-wrap: wrap; margin: var(--e2) 0; }
+.seg-puja .btn { flex: 1; min-width: 96px; cursor: pointer; }
+
+/* L historic: una fila per control i prou. La graella de la pantalla d inici
+   hi posava tres per fila al mobil i "Hi ha coses a corregir" queia en tres
+   ratlles dins d una capsa de cent píxels. */
+.seg-controls { display: flex; flex-direction: column; gap: var(--e2); }
+.seg-fila { min-height: 0; flex-direction: row; align-items: center;
+            justify-content: space-between; gap: var(--e3); }
+.seg-fila[aria-current="true"] { background: var(--utm-suau); }
+/* La fila d avui puja de fons, i el text de sota es quedava a 3,95:1 amb 12 px:
+   just per sota del minim, i aquesta app es fa servir a fora amb sol. Sobre
+   aquest fons la tinta apagada ja no serveix; aquesta i prou. */
+.seg-fila[aria-current="true"] .franja-sota,
+.seg-fila[aria-current="true"] .franja-cota .u { color: color-mix(in srgb, var(--ink) 78%, transparent); }
+.seg-check { display: flex; align-items: center; gap: var(--e2); margin-top: var(--e2);
+             font-size: .8125rem; color: var(--ink-suau); }
+.seg-check input { width: 18px; height: 18px; flex: none; accent-color: var(--utm); }
+
+/* ==========================================================================
+   ENTRENAMENTS
+
+   Una sola xifra mana i es veu de lluny: els quilòmetres d'esforç de la
+   setmana. Tota la resta —sessions, quilòmetres, desnivell, temps— és de què
+   està feta. La fórmula va escrita sota el número i s'hi queda: una mesura que
+   has d'anar a buscar què vol dir no la faràs servir mai.
+   ========================================================================== */
+
+.ent-nav { display: flex; align-items: center; justify-content: space-between;
+           gap: var(--e2); margin-bottom: var(--e3); }
+.ent-nav .marge { margin: 0; }
+
+.ent-carrega[data-dura="1"] { border-color: var(--utm); }
+.ent-gran { display: block; margin: var(--e2) 0 0;
+            font-family: var(--mono); font-size: 2.5rem; font-weight: 600;
+            line-height: 1; font-variant-numeric: tabular-nums; }
+.ent-gran i { font-style: normal; font-size: .75rem; font-weight: 400;
+              color: var(--ink-suau); margin-left: var(--e2);
+              text-transform: uppercase; letter-spacing: .06em; }
+.ent-formula { margin: var(--e2) 0 var(--e3); }
+.ent-xifres { display: grid; grid-template-columns: repeat(2, 1fr);
+              gap: var(--e3) var(--e2);
+              border-top: 1px solid var(--neatline); padding-top: var(--e3); }
+@media (min-width: 420px) { .ent-xifres { grid-template-columns: repeat(4, 1fr); } }
+.ent-xifres > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ent-xifres b { font-family: var(--mono); font-size: 1.25rem; font-weight: 600;
+                line-height: 1; font-variant-numeric: tabular-nums; }
+.ent-xifres b i { font-style: normal; font-size: .6875rem; color: var(--ink-suau);
+                  margin-left: 3px; font-weight: 400; }
+
+/* Els passos a la seva fitxa: no són entrenament, són el que et mous la resta
+   del dia. Barrejar-los amb la càrrega hauria dit que són el mateix. */
+.ent-passos { display: flex; align-items: center; justify-content: space-between;
+              gap: var(--e3); width: 100%; margin-top: var(--e3); padding: var(--e3);
+              border: 1px solid var(--neatline); background: var(--paper2);
+              color: var(--ink); text-align: left;
+              transition: background-color .16s var(--entra), transform .12s var(--entra); }
+.ent-passos > span:first-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ent-passos:active { transform: scale(.995); }
+.ent-passos-buit { border-style: dashed; }
+@media (hover: hover) and (pointer: fine) {
+  .ent-passos:hover { background: var(--utm-suau); }
+}
+
+/* DOTZE SETMANES EN BARRES. Una setmana és una capsa tancada i no un punt
+   d'una corba: entre un dilluns i el següent no hi ha res per interpolar. */
+.ent-corba { margin-top: var(--e3); }
+.ent-barres { display: flex; align-items: flex-end; gap: 3px;
+              height: 88px; margin-top: var(--e2); }
+.ent-barra { flex: 1; min-width: 0; height: 100%; padding: 0;
+             display: flex; align-items: flex-end;
+             border: 0; background: transparent; position: relative; }
+/* EL DIT NO CAU ENTRE DUES SETMANES. Dotze barres repartides en 375 px en
+   deixen 23 de dibuix, i entremig hi havia 3 px que no eren de ningú. L àrea
+   de toc s eixampla fins a menjar-se el forat: la barra es veu igual de fina
+   —que és el que la fa llegible— i qualsevol punt de la seva columna toca la
+   seva setmana. Mateix truc que la creueta d oblidar de la memòria. */
+.ent-barra::after { content: ''; position: absolute; top: 0; bottom: 0;
+                    left: -1.5px; right: -1.5px; }
+.ent-barra > span { display: block; width: 100%; background: var(--corba);
+                    transition: background-color .16s var(--entra); }
+.ent-barra[aria-current="true"] > span { background: var(--utm); }
+@media (hover: hover) and (pointer: fine) {
+  .ent-barra:hover > span { background: var(--utm); }
+}
+
+/* Una sortida de les que buiden es marca al fil, i no només amb el número:
+   el número el pots llegir, però la fila la veus passant amb el dit. */
+.ent-fila[data-llarga="1"] { border-left: 3px solid var(--utm); }
+
+/* LA PROPOSTA DE LA CAPTURA. Cada fila es pot treure i la data es pot
+   corregir: són les dues coses que la lectura d'una pantalla falla. */
+.ent-prop { padding: var(--e3); border: 1px solid var(--neatline);
+            background: var(--paper2); }
+.ent-prop + .ent-prop { margin-top: calc(-1 * var(--e2)); }
+.ent-prop-dubte { border-left: 3px solid var(--avis); }
+.ent-prop-cap { display: flex; align-items: flex-start; gap: var(--e2);
+                margin-bottom: var(--e2); cursor: pointer; }
+.ent-prop-cap input { width: 20px; height: 20px; flex: none; margin-top: 2px;
+                      accent-color: var(--utm); }
+.ent-prop-cap > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ent-prop .entrada { width: 100%; }
+
+/* La tria de tres opcions: energia, son, gana, dieta. Botons de debò, prou
+   grossos per al dit, i l'estat el diu l'atribut i no només el color. */
+.tria-fila { display: flex; gap: var(--e2); }
+.tria-bt { flex: 1; min-height: 44px; padding: 0 var(--e2);
+           border: 1px solid var(--neatline); background: transparent; color: var(--ink-suau);
+           font-size: .8125rem;
+           transition: border-color .16s var(--entra), color .16s var(--entra); }
+.tria-bt[aria-pressed="true"] { border-color: var(--utm); color: var(--utm);
+                                background: var(--utm-suau); }
+.camp-fila { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--e2); }
+
+
+/* ==========================================================================
+   CAIXES PER LLISTA — compartides per Tasques i Escola
+
+   Les dues pantalles ensenyen el mateix: llistes del Google Tasks. Abans eren
+   una tirallonga amb el nom de la llista entre claudàtors al davant de cada
+   línia, i el que ordena la feina quedava reduït a un caràcter enmig del text.
+   La caixa hi torna a posar l'ordre que la llista ja tenia i el nom es diu un
+   sol cop.
+
+   Són compartides a posta: dues pantalles que ensenyen la mateixa cosa no
+   s'han de veure diferents, i qui es fes la seva còpia acabaria amb dos
+   dissenys que divergeixen a la primera correcció.
+   ========================================================================== */
+
+.caixes { display: grid; gap: var(--e3); grid-template-columns: 1fr; }
+.caixa { border: 1px solid var(--neatline); background: var(--paper2); }
+/* LA CAPÇALERA HA DE SEMBLAR UNA CAPÇALERA.
+   Era del mateix color que el cos i una mica més petita que les files: el nom
+   de la llista es llegia com una tasca més i la caixa semblava un munt de
+   coses sense títol.
+   Qui ho arregla és LA LLETRA, no el fons. En fosc, la superfície tenyida i la
+   del cos només es diferencien 1,21:1 —mesurat—: per molt que hi posis un
+   fons, allà no hi ha cap graó que es vegi. Lletra de màquina, versaleta i
+   espaiada és com aquesta app diu «això és una etiqueta i no contingut» a
+   totes les altres pantalles, i aquí fa exactament la mateixa feina. El fons
+   tenyit s'hi queda per acompanyar, no per sostenir-ho.
+   I centrada: amb `baseline`, el «+» de 44 px estirava la barra cap avall i
+   deixava el títol enganxat a dalt. */
+.caixa-cap {
+  display: flex; align-items: center; gap: var(--e2);
+  margin: 0; padding: var(--e2) var(--e3);
+  background: var(--utm-suau);
+  border-bottom: 1px solid var(--neatline);
+  font-family: var(--mono); font-size: .75rem; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase;
+  line-height: 1.3; color: var(--ink);
+}
+.caixa-cap > span { flex: 1; min-width: 0; }
+/* Dins la caixa no hi ha ratlles quan les files són text: la caixa ja diu on
+   comença i on acaba, i una ratlla per línia torna a fer el soroll que hem
+   tret. Les tasques sí que en porten, perquè cada fila s'hi pot tocar. */
+.caixa-coses { margin: 0; padding: var(--e2) 0; list-style: none; }
+.caixa-coses li { padding: var(--e1) var(--e3); font-size: .875rem; line-height: 1.45; }
+.caixa-cos { padding: 0 var(--e3); }
+
+/* EL «+» DE LA CAPÇALERA. Va al costat del nom de la llista perquè el que
+   apuntes ha d'anar a AQUELLA llista i no a un lloc que hagis de triar després.
+   Els marges negatius fan dues coses: que un botó de 44 px no faci créixer la
+   capçalera —el que ha de fer 44 és on poses el dit, no la barra— i que el
+   signe quedi a la dreta del tot, alineat amb la vora de la caixa, en comptes
+   de flotar-hi a dins. */
+.caixa-mes {
+  flex: none; align-self: center;
+  width: 44px; height: 44px; margin: -8px -12px -8px 0; padding: 0 12px 0 0;
+  display: flex; align-items: center; justify-content: flex-end;
+  border: 0; background: transparent; color: var(--ink-suau);
+  transition: color .16s var(--entra);
+}
+.caixa-mes .ic { width: 15px; height: 15px; }
+.caixa-mes:active { color: var(--utm); }
+@media (hover: hover) and (pointer: fine) {
+  .caixa-mes:hover { color: var(--utm); }
+}
+
+/* El camp d'apuntar, dins la caixa: hi escrius i prems Enter. Es queda obert
+   després d'apuntar-ne una, que és com s'apunten tres coses seguides. */
+.caixa-nova { padding: 0 var(--e3) var(--e2); }
+.caixa-nova input {
+  width: 100%; min-height: 40px; padding: 0 var(--e2);
+  font: inherit; font-size: .875rem;
+  background: var(--paper); color: var(--ink);
+  border: 1px solid var(--utm); border-radius: var(--r);
+}
+.caixa-nova[data-esperant="1"] input { opacity: .6; }
+
+/* Acabada d'apuntar i encara no ha tornat del compte de l'escola. */
+.caixa-coses li[data-esperant="1"] { position: relative; opacity: .55; overflow: hidden; }
+.caixa-coses li[data-esperant="1"]::after {
+  content: ''; position: absolute; left: 0; bottom: 0; height: 2px; width: 40%;
+  background: var(--ink-suau); animation: esperant-va 1.1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .caixa-coses li[data-esperant="1"]::after { animation: none; width: 100%; opacity: .4; }
+}
+
+/* Dues columnes tan bon punt hi caben: amb sis llistes, una sola columna
+   t'obliga a baixar per veure què tens. */
+@media (min-width: 560px) {
+  .caixes { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); align-items: start; }
+
+  /* UNA CAIXA SOLA NO HA DE SEMBLAR UNA COLUMNA ORFE.
+     Amb `auto-fill`, la graella reserva les quatre columnes encara que només
+     hi hagi una caixa: a Relacions quedaven tres seccions de 300 píxels amb
+     900 de buit al costat, i la pàgina semblava a mig fer. Quan n'hi ha una
+     de sola s'estira, però només fins on una línia encara es llegeix bé: de
+     banda a banda d'un escriptori no es llegiria millor, només seria ampla. */
+  .caixes:has(> .caixa:only-child) { grid-template-columns: minmax(240px, 62ch); }
+}
+
+/* El camp d'apuntar no creix fins als mil pixels: és una ratlla de text, i una
+   ratlla de text que va de banda a banda no es llegeix millor, només fa que el
+   cursor quedi lluny d'on mires. */
+@media (min-width: 900px) {
+  .tsq-capt { max-width: 640px; }
+}
+
+
+/* ==========================================================================
+   LA SETMANA
+
+   Set caixes iguals i, sota, la pila. Les caixes són les mateixes d'Escola,
+   Tasques i Memòria: quatre pantalles que ensenyen llistes agrupades no poden
+   veure's de quatre maneres.
+
+   EL QUE AQUESTA PANTALLA HI AFEGEIX és una sola cosa: una barra sota el nom
+   de cada dia amb les hores que ja tens ocupades, comparades amb el dia més
+   ple de la setmana. Sense ella, set llistes de text no diuen quin dia va
+   carregat —les has de comptar—, i comptar és exactament el que has vingut a
+   no fer.
+   ========================================================================== */
+
+/* SET COLUMNES QUAN HI CABEN, i quan no, les que hi càpiguen. La setmana es
+   llegeix d'esquerra a dreta si la pantalla dona; al mòbil es llegeix avall,
+   que és com es llegeix tot al mòbil. */
+.set-dies {
+  display: grid; gap: var(--e2);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 560px)  { .set-dies { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 860px)  { .set-dies { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1180px) { .set-dies { grid-template-columns: repeat(7, 1fr); } }
+
+.set-dia { display: flex; flex-direction: column; }
+/* El dia d'avui, amb el fil. És la mateixa marca que el «ara» d'Escola: si a
+   una pantalla el present es diu amb una ratlla, a l'altra també. */
+.set-dia[data-avui="1"] { border-color: var(--utm); }
+.set-dia[data-avui="1"] .caixa-cap { color: var(--utm); }
+
+/* UN DIA QUE JA HA PASSAT ES QUEDA ENRERE, PERÒ NO S'ESBORRA: encara vols
+   veure que dilluns vas tenir sis hores quan mires on posar el que
+   arrossegues.
+   El vaig fer amb `opacity: .5` i el vaig treure: mesurat, el text del dia
+   passat queia de 4,77:1 a 2,2:1 i deixava de ser llegible. La mateixa
+   errada que ja vam corregir a les barres del comptador. Qui diu «això ja ha
+   passat» és la capçalera —perd el tint i es queda plana— i la barra, que es
+   dibuixa en gris en comptes del color viu. El text no s'hi juga res. */
+.set-dia[data-passat="1"] .caixa-cap { background: transparent; }
+.set-dia[data-passat="1"] .set-carrega i { background: var(--ink-suau); }
+
+/* Les hores del dia van amb la lletra plena, no amb la fluixa. Sobre el fons
+   tenyit de la capçalera, `--ink-suau` es queda a 3,95:1 —mesurat— i això
+   són onze píxels: per sota del mínim. I a més no és cap etiqueta, és el
+   número que has vingut a mirar. */
+.set-hores {
+  flex: none; font-style: normal; font-family: var(--mono);
+  font-size: .6875rem; letter-spacing: .04em; color: var(--ink);
+}
+
+/* La capçalera del dia és un botó, però no ha de semblar-ne un altre: hereta
+   la lletra de `.caixa-cap` i ocupa exactament el seu lloc. El que canvia en
+   tocar-la és el color, com a tot arreu. */
+.set-cap {
+  /* 44 px, com tota la resta. Amb el padding de `.caixa-cap` es quedava a 32
+     i el dit no es fa més petit perquè el botó sigui secundari. */
+  flex: 1; min-width: 0; min-height: 44px;
+  display: flex; align-items: center; gap: var(--e2);
+  margin: calc(var(--e2) * -1) calc(var(--e3) * -1);
+  padding: var(--e2) var(--e3);
+  border: 0; background: transparent; color: inherit;
+  font: inherit; letter-spacing: inherit; text-transform: inherit; text-align: left;
+  transition: color .16s var(--entra);
+}
+.set-cap > span { flex: 1; min-width: 0; }
+.set-cap:active { color: var(--utm); }
+@media (hover: hover) and (pointer: fine) { .set-cap:hover { color: var(--utm); } }
+
+/* La porta a la setmana, al peu de la pàgina del dia. */
+.dia-cap-setmana {
+  display: flex; align-items: center; justify-content: center; gap: var(--e2);
+  width: 100%; min-height: 44px; margin-top: var(--e4); padding: var(--e2) var(--e3);
+  border: 1px solid var(--neatline); background: transparent; color: var(--ink-suau);
+  font-family: var(--mono); font-size: .75rem; letter-spacing: .08em;
+  text-transform: uppercase;
+  transition: color .16s var(--entra), border-color .16s var(--entra);
+}
+.dia-cap-setmana:active { color: var(--utm); border-color: var(--utm); }
+@media (hover: hover) and (pointer: fine) {
+  .dia-cap-setmana:hover { color: var(--utm); border-color: var(--utm); }
+}
+
+.set-carrega { height: 3px; background: var(--neatline); }
+.set-carrega i { display: block; height: 100%; background: var(--utm); }
+
+.set-cosa { display: flex; gap: var(--e2); align-items: baseline; }
+/* L'hora sempre a la mateixa amplada perquè la columna quadri i l'ull hi
+   pugui baixar sense tornar enrere. Sense hora, un punt: la cosa és d'aquell
+   dia però no d'una hora, i deixar el buit faria semblar que falta una dada. */
+.set-hora {
+  flex: none; width: 2.6em; font-family: var(--mono);
+  font-size: .6875rem; color: var(--ink-suau);
+}
+.set-text { flex: 1; min-width: 0; }
+.set-cosa[data-fet="1"] .set-text { color: var(--ink-suau); }
+.set-cosa[data-urgent="1"] .set-hora { color: var(--gr); }
+
+.set-buit {
+  margin: 0; padding: var(--e2) var(--e3);
+  font-family: var(--mono); font-size: .6875rem; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-suau);
+}
+
+/* --------------------------------------------------------------- la pila */
+
+/* EL TÍTOL I EL SEU PEU NO PODEN COMPARTIR RATLLA.
+   Era una filera: títol, peu i botó de costat. El títol s'encongia i el peu
+   no, i dins d'una columna de la graella de caixes —240 o 300 píxels a
+   tauleta i a escriptori— el títol es quedava a poc més de cent píxels: queia
+   una paraula per línia i el peu gris li passava pel mig, a mitja alçada.
+   Es llegia com una pàgina trencada, i és la llista del que et queda per fer.
+
+   Ara és una graella de dues columnes: a l'esquerra el títol i, a sota seu, el
+   peu; a la dreta el botó, que ocupa les dues files. No depèn de l'amplada,
+   o sigui que no hi ha cap mida on torni a passar. */
+.pila-fila { padding: var(--e2) var(--e3); }
+.pila-cap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--e2); row-gap: 2px;
+}
+.pila-text { grid-column: 1; grid-row: 1; min-width: 0; font-size: .875rem; line-height: 1.45; }
+.pila-fila .menut { grid-column: 1; grid-row: 2; min-width: 0; }
+.pila-fila[data-urgent="1"] .menut { color: var(--gr); }
+
+.pila-quan {
+  grid-column: 2; grid-row: 1 / span 2;
+  flex: none; width: 44px; height: 44px; margin: -10px -10px -10px 0; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; background: transparent; color: var(--ink-suau);
+  transition: color .16s var(--entra);
+}
+.pila-quan[aria-expanded="true"] { color: var(--utm); }
+@media (hover: hover) and (pointer: fine) { .pila-quan:hover { color: var(--utm); } }
+
+/* Set caselles i no un calendari: la decisió és «quin dia d'aquesta setmana»,
+   i un calendari sencer seria demanar-li que triï entre tres-cents seixanta-
+   cinc dies quan en vol set. */
+.pila-tria { display: flex; gap: 2px; margin-top: var(--e2); }
+.pila-tria button {
+  flex: 1; min-height: 44px; padding: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px;
+  border: 1px solid var(--neatline); background: transparent; color: var(--ink-suau);
+  font-family: var(--mono); font-size: .625rem; letter-spacing: .06em;
+  text-transform: uppercase;
+  transition: color .16s var(--entra), border-color .16s var(--entra);
+}
+.pila-tria button b { font-size: .8125rem; color: var(--ink); }
+.pila-tria button:disabled { opacity: .35; }
+.pila-tria button:not(:disabled):active { color: var(--utm); border-color: var(--utm); }
+@media (hover: hover) and (pointer: fine) {
+  .pila-tria button:not(:disabled):hover { color: var(--utm); border-color: var(--utm); }
+}
+
+
+/* ==========================================================================
+   LA PÀGINA PRINCIPAL
+
+   El tauler d'apartats i prou. Vivia dins d'un calaix de la conversa; treta
+   la conversa, és el que s'obre.
+
+   VA HAVER-HI UNA VERSIÓ AMB TERRENY a cada apartat —corbes que pujaven si
+   estaves al dia— i va durar una captura de pantalla: en Pol no volia
+   entendre unes ones dins d'una targeta, i una metàfora que s'ha d'explicar
+   és una metàfora que no funciona.
+
+   EL QUE ES QUEDA SÓN LES CORBES DEL FONS. No demanen res, no s'han de
+   llegir i no volen dir res que no puguis veure en un altre lloc: hi són
+   perquè fan que això sembli aquesta app i no una altra.
+   ========================================================================== */
+
+/* El terreny del fons. Fix i darrere de tot, sense interceptar mai cap dit. */
+.reticula { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+/* LES EINES DE DINS, A LA CANTONADA DE BAIX A LA DRETA DEL CAPÇAL.
+   La memòria i les relacions no són llocs on va cada dia: són què sap l'app
+   de tu i què ha vist creuant les teves dades. A la graella ocupaven el
+   mateix que els hàbits, i això no és el que valen.
+   `align-items: flex-end` és el que les baixa a l'alçada de la data: al
+   costat del títol i no flotant a dalt, que és on ell les va marcar. */
+.cap-inici { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--e3); }
+.cap-eines { display: flex; gap: var(--e1); flex: none; }
+.cap-eina {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--toc); height: var(--toc);
+  background: none; border: 1px solid transparent; color: var(--ink-suau);
+  transition: color .16s var(--entra), border-color .16s var(--entra);
+}
+.cap-eina .ic { width: 20px; height: 20px; }
+.cap-eina:focus-visible { outline: 2px solid var(--utm); outline-offset: 2px; }
+.cap-eina:active { color: var(--utm); border-color: var(--fil-viu); }
+@media (hover: hover) and (pointer: fine) {
+  .cap-eina:hover { color: var(--utm); border-color: var(--fil-viu); }
+}
+body[data-vista="inici"] .capcalera,
+body[data-vista="inici"] .pagina { position: relative; z-index: 1; }
+
+/* Dues columnes al mòbil, tres i quatre a mesura que hi cap. Cada apartat és
+   un panell amb les seves claus de cantonada, com a la resta de l'app. */
+.reixa-apartats { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--e2); }
+@media (min-width: 560px) { .reixa-apartats { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 900px) { .reixa-apartats { grid-template-columns: repeat(4, 1fr); } }
+
+.apartat {
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--e2);
+  min-height: 88px; padding: var(--e3);
+  color: var(--ink); font: inherit; text-align: left; cursor: pointer;
+  transition: background-color .16s var(--entra), transform .12s var(--entra);
+}
+.apartat .ic { width: 22px; height: 22px; color: var(--utm); }
+.apartat span { font-size: .875rem; font-weight: 600; line-height: 1.2; }
+.apartat:focus-visible { outline: 2px solid var(--utm); outline-offset: 2px; }
+.apartat:active { background: var(--utm-suau); transform: scale(.98); }
+@media (hover: hover) and (pointer: fine) {
+  .apartat:hover { background: var(--utm-suau); }
+}
+@media (prefers-reduced-motion: reduce) { .apartat { transition: none; } .apartat:active { transform: none; } }
+
+/* EL DIA I LA SETMANA, DE COSTAT I A DALT DE TOT. Ocupen l'amplada sencera i
+   la parteixen en dos: així es veuen l'un al costat de l'altre tant si a sota
+   hi ha dues columnes com quatre, i el dia no s'encongeix a mesura que la
+   pantalla creix. */
+.apartats-quan { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: var(--e2); }
+.apartat-ample { flex-direction: row; align-items: center; min-height: 60px; }
+
+
+/* ==========================================================================
+   EL BOTÓ DE PREGUNTAR, I EL CALAIX
+
+   La IA amagada. No és la porta de l'app —ho va ser i es va treure—: és un
+   botó a la cantonada que s'obre quan el necessites i que la resta del temps
+   no ocupa cap decisió.
+
+   VA A SOBRE DE LA MARCA DE VERSIÓ, i per això la marca ha de saber que hi
+   és: si es trepitgessin, la que perdria és la marca, que és la que no es
+   pot moure de la cantonada.
+   ========================================================================== */
+
+.flotant {
+  position: fixed; z-index: 30;
+  right: var(--e4);
+  bottom: calc(var(--e5) + env(safe-area-inset-bottom, 0px));
+  width: 56px; height: 56px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--paper2); color: var(--utm);
+  border: 1px solid var(--vora-viva);
+  box-shadow: var(--ombra);
+  transition: color .16s var(--entra), border-color .16s var(--entra),
+              transform .12s var(--entra);
+}
+.flotant .ic { width: 26px; height: 26px; }
+.flotant:focus-visible { outline: 2px solid var(--utm); outline-offset: 3px; }
+.flotant:active { transform: scale(.94); }
+@media (hover: hover) and (pointer: fine) { .flotant:hover { border-color: var(--utm); } }
+@media (prefers-reduced-motion: reduce) { .flotant { transition: none; } .flotant:active { transform: none; } }
+/* Amb el calaix obert, el botó sobra: el que hi ha a sota no s'ha de tocar. */
+body:has(#fosc[data-obert="1"]) .flotant { opacity: 0; pointer-events: none; }
+
+.xat { display: flex; flex-direction: column; gap: var(--e3); }
+
+.xat-fil {
+  display: flex; flex-direction: column; gap: var(--e3);
+  min-height: 180px; max-height: min(52vh, 420px);
+  overflow-y: auto; overscroll-behavior: contain;
+  padding-right: var(--e1);
+}
+.xat-buit { margin: 0; color: var(--ink-suau); font-size: .875rem; line-height: 1.55; }
+
+/* LES DUES VEUS. La seva, alineada a la dreta i amb fons; la de JEFE, a
+   l'esquerra i sense capsa: el que llegeixes de debò és la resposta, i posar
+   les dues dins d'un globus les iguala quan no ho són. */
+.xat-meu { align-self: flex-end; max-width: 88%; }
+.xat-meu p {
+  margin: 0; padding: var(--e2) var(--e3);
+  background: var(--utm-suau); color: var(--ink);
+  font-size: .875rem; line-height: 1.5;
+}
+.xat-seu { align-self: stretch; }
+.xat-seu p { margin: 0; font-size: .9375rem; line-height: 1.6; white-space: pre-wrap; }
+.xat-seu code { font-family: var(--mono); font-size: .8125rem; }
+.xat-punt { display: block; padding-left: 1.1em; text-indent: -1.1em; }
+.xat-punt::before { content: '· '; color: var(--utm); }
+
+/* LA PROPOSTA. Res del que escrigui passa sense que ho confirmis, i per això
+   té marc propi i color d'avís: ha de destacar del text, no fondre-s'hi. */
+.xat-proposta {
+  margin-top: var(--e3); padding: var(--e3);
+  border: 1px solid var(--avis); background: var(--avis-fons);
+}
+.xat-proposta p { font-size: .875rem; margin: 0 0 var(--e3); }
+.xat-accions { display: flex; gap: var(--e2); flex-wrap: wrap; }
+.xat-fi { margin: 0 !important; color: var(--ink-suau); font-size: .8125rem; }
+
+.xat-peu { display: flex; gap: var(--e2); }
+.xat-peu .entrada { flex: 1; min-width: 0; }
+.xat-neteja {
+  align-self: flex-start; background: none; border: 0; padding: var(--e1) 0;
+  color: var(--ink-suau); font: inherit; font-size: .75rem;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.xat-neteja:focus-visible { outline: 2px solid var(--utm); outline-offset: 2px; }
+
+/* Que s'hi està pensant. Tres punts i prou: un comptador de segons ja el vam
+   tenir i el que feia era mirar-lo. */
+.xat-pensa { display: flex; gap: 5px; padding: var(--e2) 0; }
+.xat-pensa i { width: 5px; height: 5px; background: var(--utm); border-radius: 50%;
+               animation: xatBat 1.1s ease-in-out infinite; }
+.xat-pensa i:nth-child(2) { animation-delay: .16s; }
+.xat-pensa i:nth-child(3) { animation-delay: .32s; }
+@keyframes xatBat { 0%, 60%, 100% { opacity: .25; } 30% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .xat-pensa i { animation: none; opacity: .6; } }
+
+
+/* ==========================================================================
+   LA MARCA DE VERSIÓ
+
+   A la cantonada, petita i sense demanar res. No és decoració: és la
+   resposta a «el que estic veient, és el que acabes de pujar?», que aquesta
+   nit va costar hores de respondre.
+
+   `pointer-events: none` perquè no s'interposi mai entre el dit i el que hi
+   hagi a sota. I al 9 px encara es llegeix si t'hi fixes, que és tot el que
+   ha de fer: no la mires mai fins al dia que la necessites.
+   ========================================================================== */
+
+/* SENSE OPACITAT. Amb `opacity: .55` quedava a 2,25:1 —mesurat— i una marca
+   que no es llegeix no serveix de res, que és justament la feina que té.
+   Discreta vol dir petita i al marge, no esborrada. És el quart cop aquesta
+   nit que apago un text per fer-lo discret i l'he de tornar a encendre. */
+.marca-versio {
+  position: fixed; right: 8px; z-index: 4; pointer-events: none;
+  bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+  font-family: var(--mono); font-size: .5625rem; letter-spacing: .06em;
+  color: var(--ink-suau);
+}
+
+
+/* ==========================================================================
+   FOCUS
+
+   Una pantalla per concentrar-se no pot ser una pantalla plena. Mentre el
+   bloc corre només hi ha el rellotge, en què estàs, i una sola sortida.
+   ========================================================================== */
+
+.foc-pagina { max-width: 620px; }
+.foc-centre { display: flex; flex-direction: column; align-items: center;
+              gap: var(--e4); padding: var(--e4) 0 var(--e3); }
+
+/* L'anell és el mateix llenguatge que la resta de l'app: el que té objectiu
+   s'ensenya com un anell que s'omple. Aquí el que s'omple és l'estona. */
+.foc-anell {
+  --p: 0;
+  width: min(74vw, 260px); aspect-ratio: 1; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: conic-gradient(var(--utm) calc(var(--p) * 1%), var(--neatline) 0);
+  position: relative;
+}
+.foc-anell::before {
+  content: ''; position: absolute; inset: 9px; border-radius: 50%;
+  background: var(--paper);
+}
+.foc-anell b, .foc-anell small { position: relative; z-index: 1; }
+.foc-anell b {
+  font-size: clamp(2.4rem, 13vw, 3.6rem); font-weight: 700; line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+}
+.foc-anell small {
+  margin-top: 6px; font-family: var(--mono); font-size: .6875rem;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-suau);
+}
+/* En acabar, l'anell sencer. Sense parpelleig: ja t'ha vibrat el telèfon, i
+   una pantalla que batega mentre decideixes què fas és soroll. */
+.foc-anell[data-acabat="1"] { background: var(--utm); }
+
+.foc-que { margin: 0; font-size: 1rem; text-align: center; max-width: 30ch; }
+.foc-sense { color: var(--ink-suau); }
+
+.foc-accions { display: flex; flex-direction: column; gap: var(--e2);
+               width: 100%; max-width: 320px; }
+.foc-accions .btn { width: 100%; }
+
+/* Les durades. La primera és la de deu i surt triada: vegeu 40_Mod_Focus.gs. */
+.foc-tries { display: flex; gap: var(--e2); }
+.foc-durada {
+  min-width: 76px; min-height: 76px; padding: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px;
+  border: 1px solid var(--neatline); background: transparent; color: var(--ink-suau);
+  font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  transition: color .16s var(--entra), border-color .16s var(--entra);
+}
+.foc-durada span { font-family: var(--mono); font-size: .5625rem; letter-spacing: .1em;
+                   text-transform: uppercase; font-weight: 400; }
+.foc-durada[aria-pressed="true"] { color: var(--utm); border-color: var(--utm); }
+@media (hover: hover) and (pointer: fine) { .foc-durada:hover { color: var(--utm); } }
+
+.foc-en-que {
+  display: flex; align-items: center; gap: var(--e2); width: 100%; max-width: 340px;
+  min-height: 48px; padding: 0 var(--e3);
+  border: 1px solid var(--neatline); background: transparent;
+  color: var(--ink); font: inherit; font-size: .9375rem; text-align: left;
+}
+.foc-en-que .ic { margin-left: auto; flex: none; color: var(--ink-suau); }
+.foc-comenca { width: 100%; max-width: 340px; }
+.foc-nota { max-width: 34ch; text-align: center; margin: 0; }
+
+.foc-tasca {
+  display: block; width: 100%; text-align: left; padding: var(--e2) var(--e3);
+  border: 0; background: transparent; color: var(--ink); font: inherit;
+  font-size: .875rem; line-height: 1.4; min-height: 44px;
+}
+.foc-tasca[data-urgent="1"] > span:first-child { color: var(--avis); }
+.foc-tasca .foc-pas { display: block; margin-top: 2px; font-size: .8125rem; color: var(--utm); }
+@media (hover: hover) and (pointer: fine) { .foc-tasca:hover { background: var(--utm-suau); } }
+.foc-cap-x { position: relative;
+             flex: none; width: 32px; height: 32px; margin: -4px -8px -4px 0; padding: 0;
+             display: flex; align-items: center; justify-content: center;
+             border: 0; background: transparent; color: var(--ink-suau); }
+/* Els 44 del dit, guanyats per fora. Treure la tasca del focus és un gest
+   petit i ha de seguir semblant-ho; el que no pot ser és que falli el toc. */
+.foc-cap-x::after { content: ''; position: absolute; top: 50%; left: 50%;
+                    width: 44px; height: 44px; transform: translate(-50%, -50%); }
+
+.foc-fila { display: flex; gap: var(--e2); align-items: baseline;
+            padding: var(--e1) var(--e3); }
+.foc-hora { flex: none; width: 3.2em; font-family: var(--mono); font-size: .6875rem;
+            color: var(--ink-suau); }
+.foc-cos { flex: 1; min-width: 0; font-size: .875rem; }
+
+@media (prefers-reduced-motion: reduce) { .foc-durada { transition: none; } }
+
+
+/* ==========================================================================
+   LES RELACIONS
+
+   Files de dues línies: la frase i, sota, d'on surt. La segona línia no és
+   lletra petita decorativa —és el que et permet decidir si t'ho creus, i per
+   això porta sempre les setmanes primer i el número tècnic al final.
+   ========================================================================== */
+
+.rel-fila { padding: var(--e2) var(--e3); }
+.rel-frase { margin: 0; font-size: .9375rem; line-height: 1.45; }
+.rel-peu {
+  display: flex; flex-wrap: wrap; gap: var(--e2); margin: 4px 0 0;
+  font-family: var(--mono); font-size: .6875rem; letter-spacing: .04em;
+  color: var(--ink-suau);
+}
+.rel-peu > span + span::before { content: '·'; margin-right: var(--e2); }
+.rel-rho { opacity: 1; }
+/* Les que encara no es poden dir es queden amb la lletra fluixa a la frase,
+   no amb opacitat a la fila: el que ha de recular és el pes del text, i
+   `--ink-suau` sobre el panell dona 4,77:1 —mesurat—, que es llegeix. */
+.rel-curta .rel-frase { color: var(--ink-suau); font-size: .875rem; }
+
+
+/* ==========================================================================
+   LA MEMÒRIA
+
+   Files de text amb una creu. Res més: el que hi ha aquí es llegeix i, de tant
+   en tant, se'n treu una. La creu no crida —treure un record no és una acció
+   destructiva, la fila es queda al full— però es veu, perquè el valor d'això
+   és poder dir-li coses sabent que les pots desdir.
+   ========================================================================== */
+
+.mem-fila { display: flex; align-items: flex-start; gap: var(--e2); padding: var(--e1) var(--e3); }
+.mem-fila > span { flex: 1; min-width: 0; font-size: .875rem; line-height: 1.45; }
+.mem-fila[data-fora="1"] { opacity: .35; }
+
+.mem-fora {
+  flex: none; width: 32px; height: 32px; margin: -4px -8px -4px 0; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; background: transparent; color: var(--ink-suau);
+  transition: color .16s var(--entra);
+}
+.mem-fora .ic { width: 12px; height: 12px; }
+/* L'AREA DE TOC NO ES LA DEL DIBUIX. La creueta ha de seguir sent petita
+   —oblidar una cosa que sap de tu no ha de cridar— pero el dit en vol 44,
+   i n'hi havia 32. Es guanyen per fora, sense moure res de lloc. */
+.mem-fora { position: relative; }
+.mem-fora::after { content: ''; position: absolute; top: 50%; left: 50%;
+                   width: 44px; height: 44px; transform: translate(-50%, -50%); }
+.mem-fora:active { color: var(--gr); }
+@media (hover: hover) and (pointer: fine) { .mem-fora:hover { color: var(--gr); } }
+
+.mem-vell > span { color: var(--ink-suau); text-decoration: line-through; }
+.mem-torna {
+  flex: none; min-height: 32px; padding: 0 var(--e2);
+  border: 1px solid var(--neatline); background: transparent; color: var(--ink-suau);
+  font-family: var(--mono); font-size: .625rem; letter-spacing: .08em; text-transform: uppercase;
+}
+.mem-torna:active { color: var(--utm); border-color: var(--utm); }
+
+
+/* ==========================================================================
+   ESCOLA — la safata de l'automatització
+
+   Substitueix una finestra de Telegram, però NO és un xat: el que hi arriba
+   són avisos d'un automatisme, no conversa. Per això no hi ha bafarades ni
+   alineació a dreta i esquerra: és una safata, i el que ha de cantar és què
+   queda per llegir.
+   ========================================================================== */
+
+
+/* La mesura, aturada: a l'escriptori aquest paràgraf feia tota l'amplada de la
+   pàgina i una línia de cent-trenta caràcters no es llegeix, es recorre. */
+
+/* EL QUE NO HAS LLEGIT. El fil viu a l'esquerra i la superfície encesa, la
+   mateixa marca que fan servir els hàbits fets: dins d'aquesta app, «això et
+   reclama» es diu sempre igual. I no ho diu només el color —hi ha el botó
+   «Vist», que als llegits no hi és—. */
+/* Sense pestanya de 3 px a l'esquerra: amb la vora encesa i la superfície
+   tenyida, aquell tros de vora gruixuda només afegia pes a una fitxa que ja
+   pesava més que la columna d'hores —que és el que has vingut a mirar—. */
+/* Sobre la superfície tenyida, `--ink-suau` es queda a 4,1:1. El cos d'un avís
+   que encara no has llegit és justament el que has de poder llegir. */
+
+
+/* L'HISTORIAL, PLEGAT. El que ja has despatxat no s'esborra mai, però tampoc
+   t'ha d'ocupar la pantalla: al cap de dues setmanes era una llista
+   inacabable de coses que ja havies llegit a la notificació. */
+/* SORTIR DE LA SAFATA. La targeta no desapareix de cop: s'esvaeix i es plega,
+   i així veus QUINA has despatxat. De cop, amb la llista movent-se avall, no
+   saps si has tocat la que volies. Amb moviment reduït, fora directament. */
+
+/* HA DE SEMBLAR UN BOTÓ. Era text pelat alineat a l'esquerra: allà hi ha
+   quinze dies d'avisos al darrere i ningú no els obria perquè res no deia que
+   allò es pogués tocar. Vora, i un galó que gira quan s'obre. */
+.desplega {
+  display: flex; align-items: center; gap: var(--e2);
+  width: 100%; min-height: 44px; margin-top: var(--e3); padding: 0 var(--e3);
+  border: 1px solid var(--neatline); background: transparent; color: var(--ink-suau);
+  font-family: var(--mono); font-size: .6875rem; letter-spacing: .08em;
+  text-transform: uppercase; text-align: left;
+  transition: color .16s var(--entra), border-color .16s var(--entra);
+}
+.desplega .ic { width: 12px; height: 12px; flex: none;
+                       transition: transform .16s var(--entra); }
+.desplega[aria-expanded="true"] .ic { transform: rotate(90deg); }
+.desplega:active { color: var(--utm); border-color: var(--utm); }
+@media (hover: hover) and (pointer: fine) {
+  .desplega:hover { color: var(--utm); border-color: var(--utm); }
+}
+
+/* La resposta a una pregunta teva va JUST SOTA el botó que l'ha demanada, no
+   al final de la pàgina: el que has demanat ha de sortir on estàs mirant. */
+
+
+/* ==========================================================================
+   ESCOLA — el que l'automatització ha trobat
+
+   No és una safata de missatges: és el dia que l'automatisme ha extret. Per
+   això mana la columna d'hores i no la llista de fitxes, i per això una
+   substitució no es pinta com un canvi de fitxer al Drive.
+   ========================================================================== */
+
+.secc { margin-top: var(--e5); }
+
+/* LA COLUMNA D'HORES. El fil vertical és el dia; cada cosa hi penja pel seu
+   punt. Les hores lliures hi són escrites: un forat entre dues cites no és un
+   buit del disseny, és una hora que tens. */
+/* El fil i els punts van amb `--ink-suau`, no amb `--neatline`: una vora de
+   caixa pot ser fluixa perquè la caixa ja es veu, però aquí el fil ÉS el dia i
+   amb `--neatline` sobre el fons quedava a 1,4:1 —o sigui, no s'hi veia—.
+   L'opacitat el deixa a prop de 3,5:1, que és el mínim d'una cosa que has de
+   distingir sense llegir-la. */
+
+/* LES HORES LLIURES. Sense opacitat: a .55 quedaven a 2,2:1 i eren just la
+   informació que hi hem posat expressament —«aquesta estona és teva»—. I amb
+   l'hora a la canal, com totes les altres: si se'n surt, la columna d'hores
+   deixa de ser una columna i passa a ser una llista amb sagnats desiguals. */
+
+/* ARA. La pantalla promet «l'hora que ve» i fins ara no deia per on anaves. */
+
+/* UNA SUBSTITUCIÓ NO ÉS UN AVÍS MÉS. Si te'n perds una, una classe es queda
+   sense mestre: és l'única cosa d'aquesta pantalla que va en vermell, i el
+   color no hi va sol —hi ha l'etiqueta escrita al damunt—. */
+/* La vora SENCERA i el punt del fil, no una pestanya a l esquerra. Amb el fil
+   vertical al costat, un tros de vora gruixuda mes es llegia com un accessori;
+   la caixa vermella entre dues de fosques ja canta prou.
+   (El detector marca la pestanya lateral com el tell d IA mes reconeixible, i
+   aqui no calia per res.) */
+
+/* Els pendents fan servir LES CAIXES PER LLISTA, que són compartides amb les
+   tasques —vegeu «CAIXES PER LLISTA» més avall—: les dues pantalles ensenyen
+   llistes del Google Tasks i no tenia cap sentit que es veiessin diferents.
+   Aquí, a més, res no es marca ni es completa: qui mana és el Google Tasks, i
+   una casella que no es pot clicar seria una mentida sobre el que la pantalla
+   sap fer. Per això les files són text i prou. */
+
+/* Les línies soltes de les respostes (agenda, correus…) segueixen sent línies:
+   allà no hi ha llistes que capsar. */
+
+/* ELS ACCESSOS. El primer ample: és el que obre més sovint. */
+
+/* LA CAMPANETA. Va al títol perquè, sense una marca que ho digui, una fitxa és
+   una fitxa: en Pol no va reconèixer que allò eren els avisos que li havien
+   arribat, i tenia raó a no reconèixer-ho. */
+
+/* LES CONSULTES, AL PEU. Són consulta, no el motiu d'entrar: per això van
+   últimes i més petites que qualsevol altra cosa de la pantalla. */
+
+/* LA RESPOSTA, EN UN FULL A PART I D'UNA EN UNA. Abans queien a la pàgina i
+   s'hi acumulaven: tres preguntes eren tres parets de text seguides. */
+
+
+/* L'ESCRIPTORI NO ÉS EL MÒBIL ESTIRAT. Era exactament això: la mateixa columna
+   feta ampla, amb el dia i els pendents un sota l'altre —de manera que en una
+   pantalla de mil nou-cents no veies les dues coses alhora— i les línies de
+   text de banda a banda. Les dues denses passen a anar de costat, i la pàgina
+   s'atura on s'atura la del dia, que ja ho tenia resolt. */
+
+</style>

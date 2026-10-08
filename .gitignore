@@ -1,0 +1,62 @@
+# Finances — res d'això no ha de sortir mai de la màquina
+
+# Credencials, claus i sessions
+.clasprc.json
+.clasp.json
+
+# L'ADREÇA DEL DESPLEGAMENT. La genera `npm run desplega` i no la llegeix
+# ningú: és una nota per a tu. El repositori és PÚBLIC, i una adreça que no
+# fa falta no s'ensenya. (A JEFE hi va sortir publicada una vegada.)
+apps-script/03_Adreca.gs
+*.token
+*.key
+*.pem
+.env
+.env.*
+credentials*
+client_secret*
+secrets*
+
+# Dades personals. El repositori és PÚBLIC: aquí no hi entra res teu.
+# Ni moviments, ni extractes del banc, ni còpies del full. El banc només
+# dona 90 dies enrere: un extracte vell és irrepetible, i és privat.
+*copia*.json
+*backup*.json
+finances*.json
+moviments*
+extracte*
+*.csv
+*.xlsx
+*.xls
+*.ofx
+*.qif
+*.n43
+dades/
+*.jpg
+*.jpeg
+*.heic
+
+# Dependències
+node_modules/
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Temporals
+*.tmp
+*.bak
+~$*
+
+# El mirall: dades inventades i propostes, per mirar en local i prou.
+.mirall/
+
+# Els informes de QA: són d'una execució concreta i no del projecte.
+.qa/
+
+# La configuració local de l'editor i del panell de previsualització.
+.claude/
+
+# Les decisions de disseny en curs (pàgina de tria, esbossos).
+.impeccable/

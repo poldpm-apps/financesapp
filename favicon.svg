@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="JEFE">
+  <title>JEFE</title>
+  <!--
+    Favicon: la mateixa marca, despullada.
+    A 16 px no hi caben ni anells, ni marques, ni retícula: només el camp
+    fosc, la silueta i el punt. Fer servir la icona completa aquí donaria
+    una taca blava. Les proporcions són les mateixes que icona.svg perquè
+    es reconeguin com el mateix objecte.
+  -->
+  <defs>
+    <radialGradient id="f-cel" cx="50%" cy="36%" r="72%">
+      <stop offset="0%" stop-color="#173f5e"/>
+      <stop offset="100%" stop-color="#04070b"/>
+    </radialGradient>
+    <linearGradient id="f-sol" x1="0" y1="1" x2=".3" y2="0">
+      <stop offset="0%" stop-color="#2b7fd4"/>
+      <stop offset="100%" stop-color="#9fefFa"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="14" fill="url(#f-cel)"/>
+
+  <!-- Vessant d'ombra i vessant de sol: el contrast és el que fa llegible -->
+  <path d="M32 15 L55 51 L9 51 Z" fill="#08243c"/>
+  <path d="M32 15 L55 51 L32 51 Z" fill="url(#f-sol)"/>
+  <path d="M32 15 L55 51" fill="none" stroke="#cbf7ff" stroke-width="1.6"/>
+
+  <!-- Horitzó -->
+  <path d="M6 51h52" stroke="#4fd6e0" stroke-width="2.4" stroke-linecap="round" opacity=".9"/>
+
+  <!-- El punt -->
+  <circle cx="32" cy="15" r="12" fill="#4fd6e0" opacity=".28"/>
+  <circle cx="32" cy="15" r="6.4" fill="#ffffff"/>
+</svg>

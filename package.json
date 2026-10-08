@@ -1,0 +1,19 @@
+{
+  "name": "jefe",
+  "version": "1.0.0",
+  "description": "Assistent personal sobre Google Sheets i Apps Script",
+  "private": true,
+  "scripts": {
+    "comprova": "node eines/comprova.mjs && npm run prova",
+    "puja": "node eines/comprova.mjs && node eines/prova.mjs && node eines/prova-pont.mjs && node eines/construeix.mjs && clasp push -f && node eines/desplega.mjs",
+    "obre": "clasp open",
+    "registre": "clasp logs",
+    "construeix": "node eines/construeix.mjs",
+    "desplega": "node eines/desplega.mjs",
+    "prova": "node eines/prova.mjs && node eines/prova-pont.mjs && node eines/prova-pont-calendari.mjs",
+    "mirall": "node eines/construeix.mjs && node eines/mirall.mjs"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.4.2"
+  }
+}

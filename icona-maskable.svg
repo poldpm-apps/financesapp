@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="JEFE">
+  <title>JEFE</title>
+
+  <!--
+    Variant «maskable» per a Android.
+    Android retalla la icona amb la forma que vol —cercle, quadrat arrodonit,
+    gota— i el que quedi fora de la zona segura es perd. Per això aquí el fons
+    va a sang i la marca ocupa el 74 % central: passi el que passi, no es
+    talla ni el cim ni el punt de llum.
+  -->
+
+  <defs>
+    <radialGradient id="m-cel" cx="50%" cy="42%" r="76%">
+      <stop offset="0%"   stop-color="#14405f"/>
+      <stop offset="48%"  stop-color="#0a1c2e"/>
+      <stop offset="100%" stop-color="#04070b"/>
+    </radialGradient>
+    <radialGradient id="m-bafarada" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity=".95"/>
+      <stop offset="16%"  stop-color="#b6f5fc" stop-opacity=".8"/>
+      <stop offset="42%"  stop-color="#4fd6e0" stop-opacity=".34"/>
+      <stop offset="100%" stop-color="#2b7fd4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="m-vessant" x1="0" y1="1" x2=".25" y2="0">
+      <stop offset="0%"   stop-color="#1d5f96"/>
+      <stop offset="55%"  stop-color="#3ba3dd"/>
+      <stop offset="100%" stop-color="#9fefFa"/>
+    </linearGradient>
+    <linearGradient id="m-ombra" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%"   stop-color="#050d16"/>
+      <stop offset="100%" stop-color="#0f3e63"/>
+    </linearGradient>
+    <linearGradient id="m-feix" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%"   stop-color="#4fd6e0" stop-opacity=".5"/>
+      <stop offset="100%" stop-color="#4fd6e0" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#m-cel)"/>
+
+  <!-- La marca, al 74 % i centrada dins de la zona segura -->
+  <g transform="translate(256 262) scale(0.74) translate(-256 -256)">
+
+    <g stroke="#3ba3dd" stroke-width="1.5" opacity=".10">
+      <path d="M0 128h512M0 256h512M0 384h512"/>
+      <path d="M128 0v512M256 0v512M384 0v512"/>
+    </g>
+
+    <g fill="none" stroke-linecap="round">
+      <circle cx="256" cy="216" r="204" stroke="#2b7fd4" stroke-width="2.5"
+              stroke-dasharray="150 60 84 40 180 46" opacity=".42"/>
+      <circle cx="256" cy="216" r="172" stroke="#4fd6e0" stroke-width="4"
+              stroke-dasharray="236 88 118 62" opacity=".8"/>
+    </g>
+
+    <g stroke="#4fd6e0" stroke-width="7" stroke-linecap="round" opacity=".95">
+      <path d="M256 6v38"/><path d="M256 388v38"/>
+      <path d="M22 216h38"/><path d="M452 216h38"/>
+    </g>
+
+    <g fill="url(#m-feix)" opacity=".85">
+      <path d="M243 176 L256 -30 L269 176 Z"/>
+      <path d="M214 186 L176 -6  L246 178 Z" opacity=".45"/>
+      <path d="M298 186 L336 -6  L266 178 Z" opacity=".45"/>
+    </g>
+
+    <path d="M256 122 L436 396 L76 396 Z" fill="url(#m-ombra)"/>
+    <path d="M256 122 L436 396 L256 396 Z" fill="url(#m-vessant)"/>
+    <path d="M256 122 L436 396" fill="none" stroke="#cbf7ff" stroke-width="5"
+          stroke-linejoin="round" opacity=".9"/>
+    <path d="M256 122 L76 396" fill="none" stroke="#4fd6e0" stroke-width="3.5" opacity=".5"/>
+    <path d="M256 122 L316 213 L286 200 L262 224 L238 198 L206 212 Z"
+          fill="#eafcff" opacity=".95"/>
+    <path d="M52 396h408" stroke="#4fd6e0" stroke-width="7" stroke-linecap="round" opacity=".85"/>
+
+    <circle cx="256" cy="122" r="96" fill="url(#m-bafarada)"/>
+    <circle cx="256" cy="122" r="23" fill="#ffffff"/>
+    <circle cx="256" cy="122" r="38" fill="none" stroke="#eafcff" stroke-width="3.5" opacity=".5"/>
+  </g>
+</svg>

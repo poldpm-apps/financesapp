@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#e8eef0" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#05080b" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>JEFE</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="mask-icon" href="favicon.svg" color="#4fd6e0">
+  <!--INSTALLACIO-->
+  <?!= include('ui_estil'); ?>
+</head>
+<body>
+<!--
+  THESIS: la teva vida registrada és terreny, i el compliment és altitud. Refusa
+    la graella de targetes arrodonides amb cercle de progrés i flama de ratxa.
+  OWN-WORLD: full de mapa topogràfic 1:25.000. Paper neutre fred amb marc doble,
+    quadrícula UTM blava, corbes de nivell en sienna, rampa hipsomètrica de vall
+    a cim com a únic sistema de color, simbologia dibuixada (cim, font, refugi,
+    fita, creu, cova, arbre, pont, gual, mina), cotes en itàlica tabular,
+    retolació de marge en versaletes espaiades. Cantonades rectes: els mapes no
+    en tenen de rodones. Tipografia del sistema per obligació — una font web
+    afegiria latència a l'arrencada, que és el risc número u del projecte.
+  STORY: al matí obro i veig el marge del full: una franja per hàbit amb el seu
+    símbol i les seves corbes. En toco les que he fet i marxo. Al vespre, a
+    l'ordinador, miro el full sencer i hi llegeixo el mes com un relleu.
+  FIRST VIEWPORT: mòbil — capçalera amb data i fletxes de dia, i sota la columna
+    de franges de terreny a amplada completa. Escriptori — dues columnes: el
+    control del dia a l'esquerra, el full de mes amb el relleu a la dreta.
+  FORM: full de mapa amb marge i llegenda, direcció triada per l'usuari per sobre
+    del sorteig (seed cb46e09c, assignat 6 de 7: targeta de control).
+  TÈCNICA: les corbes de nivell són SVG generat amb marching squares sobre el camp
+    de compliment (ui_relleu.html). No és una textura: si canvies una dada, el
+    relleu canvia.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the finish
+    review, the verdict, and DESIGN.md
+-->
+
+<?!= include('ui_icones'); ?>
+
+<!-- QUE S ANUNCIÏN SOLS. Els dos avisos apareixen i desapareixen sense que
+     toquis res, igual que el «brindis», que sí que porta `role="status"`.
+     Sense això, qui fa servir un lector de pantalla no s assabenta que ha
+     perdut la connexió ni que té canvis sense desar fins que hi topa. -->
+<div id="sense-xarxa" class="sense-xarxa" role="status" aria-live="polite" hidden>
+  <svg class="ic ic-p" aria-hidden="true"><use href="#ic-sense-xarxa"/></svg>
+  <span>Sense connexió. El que toquis es desarà quan tornis a tenir cobertura.</span>
+</div>
+<div id="pendents" class="sense-xarxa" role="status" aria-live="polite" hidden></div>
+
+<main id="vista" role="main"></main>
+
+<!-- LA IA, AMAGADA I A MÀ.
+     Va ser la pantalla d'arrencada —una esfera i una caixa per parlar-hi— i
+     en Pol la va treure després de fer-la servir: per fer una cosa és més
+     ràpid fer-la que demanar-la. Però per PREGUNTAR-LI encara serveix, i per
+     això torna com el que havia de ser des del principi: un botó a la
+     cantonada que obre un calaix quan el necessites, i que la resta del
+     temps no ocupa cap decisió.
+     Va aquí i no dins de cap vista perquè es pugui preguntar des d'on siguis:
+     mirant les finances, els hàbits o el dia. -->
+<button id="b-jefe" class="flotant" aria-label="Pregunta a JEFE" title="Pregunta a JEFE">
+  <svg class="ic" aria-hidden="true"><use href="#ic-jefe"/></svg>
+</button>
+
+<!-- QUINA VERSIÓ ESTÀS VEIENT, i de quan és. Aquesta nit vam perdre una
+     estona llarga perquè el codi era desplegat i la pàgina publicada era la
+     de dues hores abans, i des de fora no hi havia manera de saber-ho. Amb
+     això a la cantonada, mirar-ho és mig segon. -->
+<div id="marca-versio" class="marca-versio" aria-hidden="true"></div>
+
+<div id="fosc" class="fosc" data-obert="0"></div>
+<div id="brindis" class="brindis" role="status" aria-live="polite" data-visible="0"></div>
+
+<?!= include('ui_marca'); ?>
+<?!= include('ui_app'); ?>
+<?!= include('ui_relleu'); ?>
+<?!= include('ui_notifica'); ?>
+<?!= include('ui_xat'); ?>
+<?!= include('vista_inici'); ?>
+<?!= include('vista_habits'); ?>
+<?!= include('vista_nutricio'); ?>
+<?!= include('vista_finances'); ?>
+<?!= include('vista_seguiment'); ?>
+<?!= include('vista_entrenaments'); ?>
+<?!= include('vista_tasques'); ?>
+<?!= include('vista_diari'); ?>
+<?!= include('vista_calendari'); ?>
+<?!= include('vista_dia'); ?>
+<?!= include('ui_visor'); ?>
+<?!= include('vista_focus'); ?>
+<?!= include('vista_setmana'); ?>
+<?!= include('vista_relacions'); ?>
+<?!= include('vista_memoria'); ?>
+
+<script>
+  (function () {
+    // Cal la forma que NO escapa: l'altra convertiria les cometes en entitats
+    // HTML i trencaria el JSON. Compte: no s'ha d'escriure mai sintaxi de
+    // plantilla dins d'un comentari, perquè Apps Script també la interpreta.
+    var estat = <?!= JSON.stringify(estat) ?>;
+    App.arrenca(estat);
+    App.pintaPendents();
+  })();
+</script>
+</body>
+</html>

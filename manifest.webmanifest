@@ -1,0 +1,38 @@
+{
+  "name": "JEFE",
+  "short_name": "JEFE",
+  "description": "Assistent personal. Parla-hi i et respon amb les teves dades reals.",
+  "lang": "ca",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "id": "/jefe/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#04070b",
+  "theme_color": "#04070b",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icona.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "icona-maskable.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Hàbits d'avui",
+      "short_name": "Hàbits",
+      "url": "./#habits",
+      "icons": [{ "src": "icona.svg", "type": "image/svg+xml", "sizes": "any" }]
+    }
+  ]
+}

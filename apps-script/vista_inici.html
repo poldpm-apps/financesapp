@@ -1,0 +1,175 @@
+<script>
+/* =========================================================================
+   JEFE — LA PÀGINA PRINCIPAL
+   =========================================================================
+
+   El tauler d'apartats, que abans vivia dins d'un calaix de la conversa, i
+   la data cap a la pàgina del dia. Res més.
+
+   HI VA HAVER UNA VERSIÓ AMB TERRENY —cada apartat amb les seves corbes,
+   més amunt si estaves al dia— i en Pol la va tombar de seguida: no volia
+   entendre unes ones dins d'una targeta ni li ajudaven a res. Tenia raó.
+   Una metàfora que s'ha d'explicar és una metàfora que no funciona, i el
+   que ell necessita en obrir l'app és saber on és cada cosa i poder-hi
+   anar.
+
+   EL QUE SÍ QUE ES QUEDA són les corbes de nivell DEL FONS. Són el que fa
+   que això sembli aquesta app i no una altra, i no demanen res: no s'han de
+   llegir ni volen dir res que no puguis veure en un altre lloc.
+   ========================================================================= */
+
+App.registraVista('inici', {
+  render: function (arrel) {
+
+    function ambPantalla() {
+      return (Cau.get('moduls', []) || []).filter(function (m) {
+        return m.teVista && m.id !== 'conversa';
+      });
+    }
+    function apartats() {
+      return ambPantalla().filter(function (m) { return !m.secundari; });
+    }
+    /* Les eines de dins —què sap de tu, què ha vist creuant dades—. Hi entra
+       molt de tant en tant, i a la graella principal ocupaven el mateix que
+       els hàbits o les finances, que és on va cada dia. Van al marge del
+       capçal amb la icona i prou. Ho diu el mòdul, no aquesta pantalla: si
+       demà en neix un altre d'aquesta mena, es col·loca sol. */
+    function eines() {
+      return ambPantalla().filter(function (m) { return m.secundari; });
+    }
+
+    function reixa(l) {
+      return '<div class="reixa-apartats">' +
+        /* EL DIA I LA SETMANA VAN PRIMER I JUNTS. Cap dels dos és un mòdul:
+           són les dues respostes a la mateixa pregunta a dues distàncies
+           —«què he de tenir en compte ara» i «quan ho faré»— i per això es
+           miren de costat i no barrejats amb els apartats, que són llocs on
+           vas a treballar. */
+        '<div class="apartats-quan">' +
+          '<button class="apartat viu apartat-ample" data-ves="dia">' +
+            ic('dia') + '<span>El dia</span></button>' +
+          (App.vistes.setmana
+            ? '<button class="apartat viu apartat-ample" data-ves="setmana">' +
+                ic('setmana') + '<span>La setmana</span></button>'
+            : '') +
+        '</div>' +
+        l.map(function (m) {
+          return '<button class="apartat viu" data-ves="' + esc(m.id) + '">' +
+            ic(m.icona || 'modul') +
+            '<span>' + esc(m.nom) + '</span>' +
+          '</button>';
+        }).join('') +
+      '</div>';
+    }
+
+    /**
+     * «NO REBO ELS AVISOS QUE HAURIA DE REBRE.»
+     *
+     * I era veritat. El mòdul `Notificacions` sabia fer-ho tot i no el
+     * cridava ningú: no hi havia cap botó a cap pantalla. L'ordinador
+     * constava registrat perquè allà el permís s'havia donat pel seu compte,
+     * i llavors `Notificacions.actualitza()` l'apunta sol a cada obertura.
+     * Al mòbil, sense permís, aquella funció surt per la porta del darrere a
+     * la primera línia i no hi torna. Cap error, cap senyal: silenci.
+     *
+     * La condició és el PERMÍS i no la fitxa, a posta. Un cop donat el
+     * permís, la fitxa se la mira `actualitza()` cada cop que obres l'app i
+     * es cura sola quan Firebase la renova. El permís, en canvi, només el
+     * pots donar tu i només des d'un toc.
+     */
+    function cridaAvisos() {
+      if (!window.Notificacions || !Notificacions.potSerHi()) return '';
+      var p = Notificacions.permis();
+      if (p === 'granted') return '';
+
+      var negat = p === 'denied';
+      return '<div class="crida-avisos">' +
+        '<svg class="ic" aria-hidden="true"><use href="#ic-campana"/></svg>' +
+        '<div>' +
+          '<b>Aquest aparell no rep avisos</b>' +
+          '<p>' + (negat
+            ? 'Has denegat les notificacions en aquest aparell. Per tornar-hi: ' +
+              'si tens JEFE instal·lat, mantén premuda la icona → Informació de ' +
+              'l\'app → Notificacions. Al navegador, el cadenat de la barra ' +
+              'd\'adreces → Notificacions → Permet.'
+            : 'Els recordatoris, l\'agenda del dia i els avisos del banc no ' +
+              'et poden arribar aquí fins que ho activis.') + '</p>' +
+          (negat ? '' : '<button class="btn btn-primari" data-avisos>Activa els avisos</button>') +
+        '</div>' +
+      '</div>';
+    }
+
+    /* El permís s'ha de demanar SEMPRE des d'un toc: si no, Chrome el denega
+       ell sol i et quedes sense poder-ho tornar a intentar. Per això va lligat
+       a un botó i no a l'arrencada. */
+    function lligaAvisos() {
+      var b = arrel.querySelector('[data-avisos]');
+      if (!b) return;
+      b.addEventListener('click', function () {
+        b.dataset.carregant = '1';
+        Notificacions.activa()
+          .then(function () {
+            App.brindis('Avisos activats en aquest aparell');
+            pinta(apartats());          // la crida ja no hi ha de ser
+          })
+          .catch(function (err) {
+            b.dataset.carregant = '0';
+            App.brindis(err.message, 'error');
+            pinta(apartats());          // si l'ha denegat, ara toca l'explicació
+          });
+      });
+    }
+
+    function pinta(l) {
+      var avui = fmt.avui();
+      var t = eines();
+      arrel.innerHTML =
+        '<div class="reticula" id="reticula" aria-hidden="true"></div>' +
+        '<header class="capcalera cap-inici">' +
+          '<button class="dia-porta" data-ves="dia" aria-label="Obre la pàgina del dia">' +
+            '<p class="marge">' + esc(fmt.relativa(avui)) + '</p>' +
+            '<h1>' + esc(fmt.llarga(avui)) + '</h1>' +
+          '</button>' +
+          (t.length
+            ? '<div class="cap-eines">' + t.map(function (m) {
+                /* Sense text: no hi cap i no cal. El nom hi és per a qui
+                   escolta la pantalla i per si t'hi atures a sobre. */
+                return '<button class="cap-eina" data-ves="' + esc(m.id) + '"' +
+                  ' aria-label="' + esc(m.nom) + '" title="' + esc(m.nom) + '">' +
+                  ic(m.icona || 'modul') + '</button>';
+              }).join('') + '</div>'
+            : '') +
+        '</header>' +
+        '<div class="pagina">' + cridaAvisos() + reixa(l) + '</div>';
+
+      /* Les corbes del fons es generen un sol cop i la llavor és fixa: el SVG
+         escala sol amb el contenidor i així no balla a cada repintada. */
+      var r = arrel.querySelector('#reticula');
+      if (r) r.innerHTML = Relleu.fons(1000, 1000,
+        { color: 'var(--corba)', gruix: 1, nivells: 14 });
+
+      arrel.querySelectorAll('[data-ves]').forEach(function (b) {
+        b.addEventListener('click', function () { App.ves(b.dataset.ves); });
+      });
+
+      lligaAvisos();
+    }
+
+    /* Els apartats surten del registre de mòduls, que ja hi és desat: la
+       pantalla es pinta sencera sense esperar cap viatge. */
+    pinta(apartats());
+
+    /* I ES TORNA A PINTAR SEMPRE que arribi la llista, sense comparar si ha
+       canviat. La comparació semblava una economia i era un error d'esperar:
+       si el que hi havia desat venia d'una versió anterior —sense saber
+       encara quins mòduls són eines de dins— sortia igual i no es corregia
+       fins que algú canviés un mòdul. Repintar una graella de tretze botons
+       no costa res. */
+    crida('nucli', 'moduls', {}).then(function (d) {
+      if (!d || !d.moduls) return;
+      Cau.set('moduls', d.moduls);
+      pinta(apartats());
+    }).catch(function () { /* sense connexió, el que hi ha desat serveix igual */ });
+  }
+});
+</script>

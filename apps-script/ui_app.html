@@ -1,0 +1,1039 @@
+<script>
+/* =========================================================================
+   JEFE — marc de la interfície
+   - Pinta a l'instant des de la memòria cau; el servidor arriba després.
+   - Escriptura optimista amb cua: sense cobertura, el toc no es perd.
+   - localStorage és NOMÉS memòria cau. La veritat viu al full de càlcul.
+   ========================================================================= */
+
+var Jefe = (function () {
+
+  // ------------------------------------------------------------------ base
+
+  function esc(t) {
+    return String(t === null || t === undefined ? '' : t)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function ic(nom, classe) {
+    return '<svg class="ic ' + (classe || '') + '" aria-hidden="true"><use href="#ic-' + nom + '"/></svg>';
+  }
+
+  var DIES = ['diumenge', 'dilluns', 'dimarts', 'dimecres', 'dijous', 'divendres', 'dissabte'];
+  var DIES_C = ['dg', 'dl', 'dt', 'dc', 'dj', 'dv', 'ds'];
+  var MESOS = ['gener', 'febrer', 'març', 'abril', 'maig', 'juny',
+               'juliol', 'agost', 'setembre', 'octubre', 'novembre', 'desembre'];
+
+  var fmt = {
+    aData: function (t) { var p = String(t).split('-'); return new Date(+p[0], +p[1] - 1, +p[2], 12); },
+    avui: function () {
+      var d = new Date();
+      return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+    },
+    suma: function (t, n) {
+      var d = fmt.aData(t); d.setDate(d.getDate() + n);
+      return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+    },
+    llarga: function (t) {
+      var d = fmt.aData(t), m = MESOS[d.getMonth()];
+      var prep = /^[aeiou]/.test(m) ? "d'" : 'de ';
+      return DIES[d.getDay()] + ', ' + d.getDate() + ' ' + prep + m;
+    },
+    relativa: function (t) {
+      var avui = fmt.avui();
+      if (t === avui) return 'Avui';
+      if (t === fmt.suma(avui, -1)) return 'Ahir';
+      if (t === fmt.suma(avui, 1)) return 'Demà';
+      var d = fmt.aData(t);
+      return DIES_C[d.getDay()] + ' ' + d.getDate() + ' ' + MESOS[d.getMonth()].slice(0, 3) + '.';
+    },
+    diaNumero: function (t) { return fmt.aData(t).getDate(); },
+
+    /* Amb coma i sense decimals inútils: «5,3» i «4», no «5.3» i «4.0». */
+    decimal: function (n) {
+      var v = Math.round((Number(n) || 0) * 10) / 10;
+      return (v % 1 === 0 ? String(v) : v.toFixed(1)).replace('.', ',');
+    }
+  };
+
+  // ------------------------------------------------------------ memòria cau
+
+  var Cau = {
+    get: function (clau, perDefecte) {
+      try {
+        var v = localStorage.getItem('jefe.' + clau);
+        return v === null ? perDefecte : JSON.parse(v);
+      } catch (e) { return perDefecte; }
+    },
+    set: function (clau, valor) {
+      try { localStorage.setItem('jefe.' + clau, JSON.stringify(valor)); } catch (e) {}
+    },
+    treu: function (clau) { try { localStorage.removeItem('jefe.' + clau); } catch (e) {} },
+
+    /* Tota una família de cop: després d'escriure una dada, TOTES les pantalles
+       que la mostraven han quedat velles, no només la que miraves. Sense això,
+       apuntar una despesa i canviar de mes t'ensenyaria el mes d'abans sense
+       el que acabes d'apuntar. */
+    oblida: function (prefix) {
+      try {
+        var fora = [];
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (k && k.indexOf('jefe.' + prefix) === 0) fora.push(k);
+        }
+        fora.forEach(function (k) { localStorage.removeItem(k); });
+      } catch (e) {}
+    }
+  };
+
+  // ------------------------------------------------------- crides al servidor
+
+  /* -------------------------------------------------------------------------
+     DOS TRANSPORTS, LA MATEIXA CRIDA
+
+     Dins d'Apps Script s'usa google.script.run. Servida des de fora (GitHub
+     Pages), s'usa fetch contra el desplegament. Els mòduls no saben ni els
+     importa quin dels dos és.
+
+     TOTS DOS PORTEN LA CLAU. Aquí hi deia que google.script.run «ja ve
+     autenticat», i era mentida: el desplegament és anònim, i qualsevol que
+     obrís l'adreça rebia aquesta mateixa pàgina i podia cridar el servidor
+     des de la consola. Ara la clau va davant a les dues bandes.
+
+     `text/plain` no és un error: amb JSON el navegador enviaria una petició
+     de comprovació prèvia que Apps Script no sap respondre. El cos segueix
+     sent JSON; només canvia l'etiqueta.
+     ------------------------------------------------------------------------- */
+
+  function dinsAppsScript() {
+    return !!(window.google && google.script && google.script.run);
+  }
+
+  var Servidor = {
+    config: function () { return Cau.get('servidor', null); },
+    clau: function () { var c = Cau.get('servidor', null); return (c && c.clau) || ''; },
+    desa: function (url, clau) { Cau.set('servidor', { url: url, clau: clau }); },
+    esborra: function () { Cau.treu('servidor'); },
+    /* QUÈ CAL PER PARLAR. Dins d'Apps Script, l'adreça és la de la pàgina i
+       no se n'ha de demanar cap; la clau sí, i abans no se'n demanava perquè
+       es donava per fet que ser-hi a dins ja era estar autenticat. No ho era:
+       el desplegament és anònim i qualsevol hi podia ser a dins. */
+    llest: function () {
+      var c = Cau.get('servidor', null);
+      if (!c || !c.clau) return false;
+      return dinsAppsScript() ? true : !!c.url;
+    }
+  };
+
+  function cridaLocal_(modul, accio, params) {
+    var clau = Servidor.clau();
+    if (!clau) {
+      var sense = new Error('Encara no has connectat JEFE amb el teu servidor.');
+      sense.senseServidor = true;
+      return Promise.reject(sense);
+    }
+    return new Promise(function (resolta, falla) {
+      google.script.run
+        .withSuccessHandler(function (r) {
+          App.enLinia(true);
+          if (r && r.ok) return resolta(r.dades);
+          var err = new Error((r && r.error) || 'El servidor ha respost sense dades.');
+          err.api = true;
+          if (/clau d'accés/i.test(err.message)) err.clauDolenta = true;
+          falla(err);
+        })
+        .withFailureHandler(function (err) {
+          App.enLinia(false);
+          var e = new Error(err && err.message ? err.message : 'No hi ha connexió amb el servidor.');
+          e.xarxa = true; falla(e);
+        })
+        .api(clau, modul, accio, params || {});
+    });
+  }
+
+  function cridaRemota_(modul, accio, params) {
+    var cfg = Servidor.config();
+    if (!cfg || !cfg.url || !cfg.clau) {
+      var e = new Error('Encara no has connectat JEFE amb el teu servidor.');
+      e.senseServidor = true;
+      return Promise.reject(e);
+    }
+    return fetch(cfg.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ clau: cfg.clau, modul: modul, accio: accio, params: params || {} })
+    })
+    .then(function (r) {
+      /* HA CONTESTAT: o sigui que xarxa n'hi ha. Es conserva `xarxa` perquè
+         un 500 val la pena reintentar-lo i la cua l'ha de guardar, però es
+         marca `servidor` perquè ningú digui que estàs sense cobertura. */
+      if (!r.ok) {
+        App.enLinia(true);
+        var e = new Error('El servidor ha respost ' + r.status + '.');
+        e.xarxa = true; e.servidor = true; throw e;
+      }
+      return r.json();
+    })
+    .then(function (r) {
+      App.enLinia(true);
+      if (r && r.ok) return r.dades;
+      var err = new Error((r && r.error) || 'El servidor ha respost sense dades.');
+      err.api = true;
+      if (/clau d'accés/i.test(err.message)) err.clauDolenta = true;
+      throw err;
+    })
+    .catch(function (err) {
+      if (!err.api && !err.senseServidor) {
+        err.xarxa = true;
+        /* NOMÉS ÉS «SENSE CONNEXIÓ» SI DE DEBÒ NO N'HI HA. La bandera diu
+           «el que toquis es desarà quan tornis a tenir cobertura», i sortia
+           igualment quan el servidor contestava un error: mentida, i a més
+           no marxava mai fins que una crida tornava bé. Si hem rebut
+           resposta, hi ha xarxa; el que falla és l'altra banda. */
+        if (!err.servidor) App.enLinia(false);
+      }
+      throw err;
+    });
+  }
+
+  function crida(modul, accio, params) {
+    return dinsAppsScript() ? cridaLocal_(modul, accio, params)
+                            : cridaRemota_(modul, accio, params);
+  }
+
+  /**
+   * ESCRIURE I TORNAR AMB LA PANTALLA JA REFETA, EN UN SOL VIATGE.
+   *
+   * `crida(...).then(carrega)` són dues anades al servidor, i a Apps Script
+   * cada anada costa un segon i mig facis el que facis. Amb això se'n fa una:
+   * el servidor desa i, abans de contestar, torna a muntar la pantalla.
+   *
+   * Es resol AMB LA PANTALLA, no amb el que ha tornat l'escriptura. Si el que
+   * et cal és això altre, fes servir `crida` de tota la vida.
+   */
+  function escriu(modul, accio, params, paramsPantalla) {
+    var p = {};
+    for (var k in (params || {})) p[k] = params[k];
+    p._pantalla = paramsPantalla || {};
+
+    return crida(modul, accio, p).then(function (r) {
+      return (r && r._pantalla !== undefined) ? r._pantalla : r;
+    });
+  }
+
+  // ------------------------------------------------- cua d'escriptures pendents
+
+  /* ==========================================================================
+     TOTES LES PANTALLES EN UNA ANADA, i abans que les demanis
+
+     El problema no era que les pantalles es muntessin lentes —mesurat el 4
+     d'agost del 2026: cap passa de mig segon al servidor—. Era que cada
+     apartat feia el seu propi viatge, i cada viatge a Apps Script val DOS
+     SEGONS abans de fer res. Obrir l'app i tocar quatre apartats eren vuit
+     segons d'espera pura.
+
+     Això en fa un de sol, en segon pla, just després d'arrencar, i desa cada
+     pantalla amb la clau que la seva vista mirarà. Quan hi entres, ja hi és.
+
+     LA TAULA DE CLAUS ÉS AQUÍ i no al servidor a posta: quina clau fa servir
+     una vista és cosa de la vista, i el nucli no ha de saber-ne res. Si un dia
+     una vista canvia de clau, es canvia aquí i prou; i si algú se n'oblida, el
+     pitjor que passa és que aquella pantalla torni a fer el seu viatge com
+     abans —no que ensenyi res que no toca.
+     ========================================================================== */
+  var Precarrega = {
+    fet: 0,
+
+    clauDe: function (modul, avui) {
+      switch (modul) {
+        case 'habits':    return 'habits.' + avui;
+        case 'calendari': return 'calendari.' + avui.slice(0, 7);
+        case 'tasques':   return 'tasques.llista';
+        case 'seguiment': return 'seguiment';
+        case 'diari':     return 'diari.' + avui;
+        case 'nutricio':  return 'nutricio.dia.' + avui;
+        case 'finances':  return 'finances.mes.ara';
+        default:          return null;      // el que no sabem, no es desa
+      }
+    },
+
+    /**
+     * QUÈ ES DESA, no només on.
+     *
+     * Gairebé totes les vistes es desen la resposta sencera, però els hàbits
+     * no: la seva resposta porta dues coses —el dia i el full del mes— i cada
+     * una va a la seva clau. Desar-hi el paquet sencer feia que la vista es
+     * pensés que allò era el dia, i petava en obrir amb «Cannot read properties
+     * of undefined». Va passar la primera nit que va existir això.
+     *
+     * Per això aquí es diu com es desa cada mòdul i no només sota quina clau:
+     * si una vista parteix la seva resposta, s'ha de partir igual.
+     */
+    desa: function (modul, dades, avui) {
+      if (modul === 'habits') {
+        if (dades.dia) Cau.set('habits.' + avui, dades.dia);
+        if (dades.mes) Cau.set('habits.mes', dades.mes);
+        return;
+      }
+      var clau = this.clauDe(modul, avui);
+      if (clau) Cau.set(clau, dades);
+    },
+
+    omple: function () {
+      /* Un cop per obertura i prou. Tornar-hi cada vegada que canvies
+         d'apartat seria fer feina per no guanyar res: el que hi ha desat es
+         posa al dia sol quan entres. */
+      if (this.fet) return;
+      this.fet = Date.now();
+
+      var jo = this;
+      /* Mig segon de marge perquè la pantalla que hagis obert tingui la
+         connexió per a ella sola: el paquet és per a les que ENCARA no mires. */
+      setTimeout(function () {
+        crida('nucli', 'paquet', {}).then(function (r) {
+          if (!r || !r.pantalles) return;
+          var avui = r.avui || fmt.avui();
+          Object.keys(r.pantalles).forEach(function (id) {
+            var dades = r.pantalles[id];
+            if (!dades) return;
+            if (id === '_dia') { Cau.set('dia.' + avui, dades); return; }
+            jo.desa(id, dades, avui);
+          });
+        }).catch(function () {
+          /* Si falla, no passa res de res: cada pantalla sap demanar la seva. */
+        });
+      }, 500);
+    }
+  };
+
+  var Cua = {
+    tot: function () { return Cau.get('cua', []); },
+
+    afegeix: function (modul, accio, params, clau) {
+      var cua = Cua.tot();
+      // Una sola entrada per clau: tocar cinc cops el mateix hàbit desa un cop.
+      if (clau) cua = cua.filter(function (i) { return i.clau !== clau; });
+      cua.push({ modul: modul, accio: accio, params: params, clau: clau || null, ts: Date.now() });
+      Cau.set('cua', cua);
+      App.pintaPendents();
+    },
+
+    /**
+     * Envia la cua en sèrie.
+     *
+     * UNA QUE FALLA NO SE N'HA D'EMPORTAR CAP ALTRA. Abans, quan el servidor
+     * en rebutjava una, s'esborrava la cua SENCERA: les que anaven darrere ni
+     * s'havien provat i desapareixien igual. I el missatge més probable és
+     * «El sistema està ocupat processant una altra operació. Torna-ho a
+     * provar» —un error que passa sol, perquè a Apps Script salta cada vegada
+     * que dues coses toquen el full alhora—, o sigui que et deia que ho
+     * tornessis a provar just després d'haver-t'ho llençat tot. Marcar cinc
+     * hàbits sense cobertura i perdre'ls tots en tornar-hi és exactament el
+     * contrari del que ha de fer una cua.
+     *
+     * Ara: la que el servidor rebutja se'n va sola i les altres segueixen. La
+     * que falla per xarxa atura la tanda i es conserva tot, que això sí que es
+     * reintenta a la propera obertura.
+     */
+    envia: function () {
+      var cua = Cua.tot();
+      if (!cua.length) return Promise.resolve(0);
+
+      function treu(item) {
+        Cau.set('cua', Cua.tot().filter(function (i) { return i.ts !== item.ts; }));
+        App.pintaPendents();
+      }
+
+      var enviades = 0, rebutjades = 0, primerError = null, atura = false;
+
+      return cua.reduce(function (cadena, item) {
+        return cadena.then(function () {
+          if (atura) return;
+          return crida(item.modul, item.accio, item.params).then(function () {
+            enviades++;
+            treu(item);
+          }, function (err) {
+            if (err.api) {
+              // El servidor l'ha rebutjada: reintentar-la eternament no la
+              // salvarà. Fora aquesta, i les altres encara tenen el seu torn.
+              rebutjades++;
+              if (!primerError) primerError = err.message;
+              treu(item);
+              return;
+            }
+            atura = true;   // sense xarxa: es conserva tot i ja tornarà
+          });
+        });
+      }, Promise.resolve()).then(function () {
+        if (rebutjades) {
+          App.brindis(rebutjades === 1
+            ? 'No s\'ha pogut desar un canvi: ' + primerError
+            : 'No s\'han pogut desar ' + rebutjades + ' canvis. El primer: ' + primerError,
+            'error');
+        }
+        return enviades;
+      });
+    }
+  };
+
+  // -------------------------------------------------------------- components
+
+  var Comp = {
+    carregant: function (files) {
+      var n = files || 4, h = '<div class="marques" aria-busy="true" aria-label="Carregant">';
+      for (var i = 0; i < n; i++) h += '<div class="esquelet marca-fantasma"></div>';
+      return h + '</div>';
+    },
+
+    buit: function (titol, text, botoHtml) {
+      return '<div class="estat">' + ic('habits', 'ic-g') +
+             '<h2>' + esc(titol) + '</h2>' +
+             '<p>' + esc(text) + '</p>' + (botoHtml || '') + '</div>';
+    },
+
+    /**
+     * UN ERROR HA DE TENIR SORTIDA.
+     *
+     * Sense servidor connectat, aquesta pantalla deia «Alguna cosa ha fallat ·
+     * Encara no has connectat JEFE» i oferia «Torna-ho a provar», que tornava
+     * a fallar perquè no hi havia res a reintentar: faltava la clau i no hi
+     * havia cap manera d'escriure-la si no recarregaves la pàgina a mà. Era
+     * un cul-de-sac. Ara el que et falta és el que et demana.
+     */
+    error: function (err, reintenta) {
+      var esXarxa = err && err.xarxa;
+      var sense = err && err.senseServidor;
+      var dolenta = err && err.clauDolenta;
+
+      var titol = sense ? 'Encara no has connectat JEFE'
+                : dolenta ? 'La clau no és correcta'
+                : esXarxa ? 'Sense connexió'
+                : 'Alguna cosa ha fallat';
+      var icona = sense || dolenta ? 'avis' : (esXarxa ? 'sense-xarxa' : 'avis');
+      var text = sense
+        ? 'Cal la clau que et va donar generaClauAcces() per poder llegir les teves dades.'
+        : (err && err.message ? err.message : String(err));
+
+      return '<div class="estat">' + ic(icona, 'ic-g') +
+             '<h2>' + esc(titol) + '</h2>' +
+             '<p>' + esc(text) + '</p>' +
+             (sense || dolenta
+               ? '<button class="btn btn-primari" data-connecta-ara="1">Connecta</button>'
+               : (reintenta ? '<button class="btn btn-secundari" data-reintenta="1">Torna-ho a provar</button>' : '')) +
+             /* SORTIR D'AQUÍ NO POT DEPENDRE DE SI HI HA RES A REINTENTAR.
+                Aquest botó penjava de `reintenta`, i una pantalla que peta
+                pintant-se no en passa cap: quedaves en una pàgina amb el text
+                de l'error i CAP botó. Comprovat amb Hàbits. El comentari de
+                més amunt ja explica que això va ser un cul-de-sac una vegada;
+                ho era encara per al cas general. */
+             '<button class="btn btn-fantasma" data-va-inici="1">Ves al full índex</button>' +
+             '</div>';
+    },
+
+    avis: function (titol, text) {
+      return '<div class="avis">' + ic('avis') +
+             '<div><strong>' + esc(titol) + '</strong>' + esc(text) + '</div></div>';
+    },
+
+    targeta: function (contingut) { return '<div class="targeta">' + contingut + '</div>'; }
+  };
+
+  // --------------------------------------------------------------- aplicació
+
+  var App = {
+    vistes: {},
+    actual: null,
+    moduls: [],
+    enLiniaEstat: true,
+
+    registraVista: function (id, def) { App.vistes[id] = def; },
+
+    arrenca: function (estatInicial) {
+      App.moduls = (estatInicial && estatInicial.moduls) || Cau.get('moduls', []);
+      App.pintaNav();
+      /* Fosc sempre, no «segons el que digui el sistema». Amb «auto», el
+         mateix JEFE sortia blanc al mòbil i fosc al PC segons com tingués
+         cadascun la configuració, i això no és una app: són dues. La sala de
+         comandament ja és fosca; la resta l'ha d'acompanyar.
+
+         I ara ja no es tria: el botó de passar a full de dia s'ha tret. El que
+         hi hagi desat als aparells d'abans —«auto», «clar»— es migra aquí i
+         no torna a preguntar-se. */
+      App.aplicaTema();
+
+      /* LA MARCA DE VERSIÓ. La construcció hi deixa la data i, si el codi
+         estava net, el commit. El «· en curs» —que vol dir que es va
+         construir amb canvis sense desar— no li diu res a ningú que no sigui
+         jo, i es treu: el que ha de llegir ell és quan es va penjar això que
+         està mirant. */
+      (function () {
+        var on = document.getElementById('marca-versio');
+        if (!on || !window.MARCA_JEFE) return;
+        on.textContent = String(window.MARCA_JEFE).replace(/\s*·\s*en curs\s*$/, '');
+      })();
+
+      /* ELS VIGILANTS ES REGISTREN SEMPRE, i abans de res.
+         Abans, si encara no hi havia clau d'accés, aquesta funció sortia aquí
+         mateix per demanar-la. Amb la sortida se n'anava tot el que ve
+         després: el botó d'enrere del mòbil, la cua del que s'ha d'enviar
+         quan torni la cobertura, i el detectar que has recuperat la xarxa.
+         I un cop posaves la clau ja no es tornava a arrencar, o sigui que
+         l'app es quedava coixa la resta de la sessió sense dir-ho.
+
+         Registrar-los no costa res ni depèn de tenir servidor. El que depèn
+         del servidor és què s'ensenya, i això va més avall. */
+      window.addEventListener('popstate', function (ev) {
+        var id = (ev.state && ev.state.vista) || 'inici';
+        App.ves(App.vistes[id] ? id : 'inici', null, true);
+      });
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) Cua.envia();
+      });
+      window.addEventListener('online', function () { App.enLinia(true); Cua.envia(); });
+      window.addEventListener('offline', function () { App.enLinia(false); });
+
+      // Encara sense clau —o sense adreça, si se serveix de fora—: connectar.
+      if (!Servidor.llest()) {
+        App.ves('inici');
+        setTimeout(function () { App.connecta(); }, 300);
+        return;
+      }
+
+      /* EL FULL ÍNDEX ÉS LA PANTALLA D'ARRENCADA.
+         Ho era la conversa —l'assistent— i s'ha tret: en Pol el va fer servir
+         i la conclusió va ser que per fer una cosa és més ràpid fer-la que
+         demanar-la. El que ha de sortir en obrir l'app és on és tot i què
+         queda pendent, no una caixa per escriure-hi.
+         I SEMPRE, encara que ahir sortissis d'una altra vista. Recordar
+         l'última convertia qualsevol pantalla sense sortida en una trampa que
+         ni reinstal·lant l'app es desfeia, perquè la cau sobreviu a la
+         instal·lació.
+         L'única excepció és una destinació demanada explícitament a l'adreça,
+         que és com arriben les notificacions: tocar «falten les cremades» ha
+         de dur a Nutrició i no a l'índex. Es consumeix i prou: no es desa. */
+      /* EL HASH POT PORTAR UNA DATA: «#dia:2026-08-05».
+         Sense això, el resum de les onze i mitja —que parla de demà— t'obria
+         la pàgina d'avui, que és justament el dia del qual no et parlava. */
+      var d = App.deLAdreca(String(location.hash || ''));
+      if (d.vista && App.vistes[d.vista]) {
+        try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+        App.ves(d.vista, d.params);
+      } else {
+        App.ves('inici');
+      }
+
+      /* TOCAR UNA NOTIFICACIÓ AMB L'APP JA OBERTA.
+         Aquest és el cas més habitual i era el que pitjor anava: el
+         treballador de servei li feia el focus a la finestra i s'acabava
+         aquí, o sigui que la notificació et deixava exactament on ja eres.
+         Ara el treballador diu on has d'anar i s'hi va sense recarregar res:
+         és instantani i no perds el que tinguessis obert.
+
+         El `hashchange` és la xarxa de seguretat per si el missatge no
+         arriba: el treballador també canvia l'adreça. */
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.addEventListener('message', function (ev) {
+          var m = ev && ev.data;
+          if (!m || m.jefe !== 'ves') return;
+          var y = App.deLAdreca('#' + String(m.vista || ''));
+          if (y.vista && App.vistes[y.vista]) App.ves(y.vista, y.params);
+        });
+      }
+      window.addEventListener('hashchange', function () {
+        var x = App.deLAdreca(String(location.hash || ''));
+        if (!x.vista || !App.vistes[x.vista]) return;
+        try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+        App.ves(x.vista, x.params);
+      });
+
+      Cua.envia();
+
+      /* Refresca la llista de mòduls en segon pla: un mòdul nou apareix sol.
+         Demana `moduls` i no `inici`: d aquesta resposta només se n aprofita
+         la llista, i `inici` a sobre munta totes les targetes del full índex,
+         que és la part cara de la petició. */
+      crida('nucli', 'moduls', {}).then(function (d) {
+        Cau.set('moduls', d.moduls);
+        if (JSON.stringify(d.moduls) !== JSON.stringify(App.moduls)) {
+          App.moduls = d.moduls; App.pintaNav();
+        }
+      }).catch(function () { /* sense connexió: seguim amb la cau */ });
+
+      Precarrega.omple();
+    },
+
+    /**
+     * QUÈ DEMANA UNA ADREÇA. «#dia» o «#dia:2026-08-05».
+     *
+     * Els dos punts i no una interrogació a posta: el hash no és una consulta
+     * i posar-hi «?» faria pensar que ho és. Una data i prou, que és l'únic
+     * que cal —si algun dia en calen dos, ja es veurà, però no s'inventa ara.
+     */
+    deLAdreca: function (hash) {
+      var t = String(hash || '').replace(/^#/, '').trim();
+      if (!t) return { vista: '', params: {} };
+      var i = t.indexOf(':');
+      if (i === -1) return { vista: t, params: {} };
+      var vista = t.slice(0, i);
+      var valor = t.slice(i + 1);
+      /* LA FORMA NO FA UNA DATA.
+         Comprovava que fossin quatre xifres, un guionet i les altres, i prou:
+         «#dia:2026-13-45» passava el filtre, el constructor de dates el feia
+         rodar i t obria el 14 de febrer del 2027 com si res. Per aquí és per
+         on entren les notificacions, o sigui que una data malmesa t hauria
+         ensenyat l agenda d un altre dia sense dir-ho. Ara es construeix i es
+         comprova que en surti el mateix dia que hi havia escrit. */
+      var esData = false;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
+        var d = new Date(valor + 'T00:00:00');
+        esData = !isNaN(d.getTime()) &&
+                 [d.getFullYear(), ('0' + (d.getMonth() + 1)).slice(-2),
+                  ('0' + d.getDate()).slice(-2)].join('-') === valor;
+      }
+      return { vista: vista, params: esData ? { data: valor } : {} };
+    },
+
+    /* Portar-se totes les pantalles d'una anada. Surt aquí perquè hi ha dos
+       moments que ho volen: en arrencar, i just quan acabes de connectar el
+       servidor —aquell dia l'arrencada ja havia passat de llarg. */
+    precarrega: function () { Precarrega.omple(); },
+
+    ves: function (id, params, sensePila) {
+      var def = App.vistes[id];
+      if (!def) { id = 'inici'; def = App.vistes.inici; }
+
+      // El botó d'enrere del mòbil ha de funcionar: és el primer que prems quan
+      // vols sortir d'algun lloc. Només apilem els canvis de vista, no els de
+      // dins d'una vista (canviar de dia no és navegar).
+      if (!sensePila && App.actual && App.actual !== id) {
+        try { history.pushState({ vista: id }, ''); } catch (e) { /* no és cap error */ }
+      }
+
+      App.actual = id;
+      /* Quina pantalla s'està veient, al `body`. De moment només ho fa servir
+         la marca de versió per apartar-se del micròfon a la conversa, però
+         qualsevol cosa que hagi de dependre de la pantalla ja té on mirar. */
+      document.body.dataset.vista = id;
+
+      document.querySelectorAll('.nav a').forEach(function (a) {
+        if (a.dataset.vista === id) a.setAttribute('aria-current', 'page');
+        else a.removeAttribute('aria-current');
+      });
+
+      /* CADA VISTA PINTA A LA SEVA PRÒPIA CAPSA, I NO AL CONTENIDOR.
+         -----------------------------------------------------------------
+         Abans totes rebien el mateix `#vista`. Una petició al servidor triga
+         un segon i mig, i si en aquell segon i mig canviaves de pantalla, la
+         resposta de la que havies deixat arribava i s'escrivia al mateix
+         `#vista` —que ara era d'una altra vista— i te la tornava a plantar
+         al davant. Des de fora: obres un apartat, en surts, i al cap d'uns
+         segons se't torna a obrir sol.
+
+         Amb una capsa per render, la vista vella escriu a un tros de DOM que
+         ja no penja d'enlloc: no es veu, i a més `arrel.isConnected` passa a
+         ser fals, que és el que les vistes ja miren per no fer feina de
+         franc. Val per a totes, i per a les que es facin d'ara endavant. */
+      var contenidor = document.getElementById('vista');
+      contenidor.innerHTML = '';
+      var arrel = document.createElement('div');
+      arrel.className = 'vista-capsa';
+      contenidor.appendChild(arrel);
+
+      window.scrollTo(0, 0);
+      /* SI PETA PINTANT, LA CÒPIA DESADA ÉS SOSPITOSA I SE'N VA.
+         Aquesta pantalla es pinta del que hi ha a localStorage, i abans es
+         quedava així: una resposta del servidor amb una forma que la vista no
+         esperava es desava, es tornava a pintar a cada càrrega i petava
+         igual. Recarregar no ho arreglava —comprovat amb Hàbits, "Cannot read
+         properties of undefined"— i l'única sortida era buidar les dades del
+         lloc des del navegador, que amb l'app instal·lada no se li acut a
+         ningú. El desencadenant més probable aquí és una versió desplegada a
+         mitges, que ja ha passat.
+         La cua NO es toca: viu a 'cua' i no porta el nom de cap pantalla, o
+         sigui que el que tinguis pendent d'enviar segueix sent-hi. */
+      try { def.render(arrel, params || {}); }
+      catch (err) {
+        try { Cau.oblida(id + '.'); Cau.treu(id); } catch (e) {}
+        arrel.innerHTML = Comp.error(err, function () { App.ves(id, params, true); });
+      }
+    },
+
+    refresca: function () { App.ves(App.actual); },
+
+    /**
+     * ESTÀS TOCANT ALGUNA COSA ARA MATEIX?
+     *
+     * Les vistes es pinten dues vegades: primer amb el que hi havia desat i
+     * després amb el que arriba del servidor. Aquesta segona vegada refà
+     * l'HTML, i si en aquell moment tenies un desplegable obert o estaves
+     * escrivint, allò desapareix: el menú es tanca sol i el que havies teclejat
+     * es perd. Abans de repintar, es pregunta.
+     */
+    interactuant: function () {
+      var a = document.activeElement;
+      if (!a) return false;
+      if (document.getElementById('fosc').dataset.obert === '1') return true;
+      var t = a.tagName;
+      return t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA' || a.isContentEditable;
+    },
+
+    pintaNav: function () {
+      var nav = document.getElementById('nav');
+      if (!nav) return;                    // sense barra de seccions: no és cap error
+      var items = [{ id: 'inici', nom: 'Inici', icona: 'inici' }].concat(
+        App.moduls.filter(function (m) { return m.teVista; })
+      );
+      nav.innerHTML = items.map(function (m) {
+        /* L'ADREÇA ÉS LA DE DEBÒ I NO UN `#` buit. Amb el coixinet sol, obrir
+           un apartat en una pestanya nova —clic del mig, o clic amb Ctrl— et
+           duia a l'índex, perquè l'enllaç no deia enlloc. L'arrencada ja sap
+           llegir «#habits» de l'adreça, o sigui que aquesta és la que hi ha
+           d'anar. El clic normal el segueix aturant el guió de sempre. */
+        return '<a href="#' + esc(m.id) + '" data-vista="' + esc(m.id) + '">' +
+               ic(m.icona || 'modul') + '<span>' + esc(m.nom) + '</span></a>';
+      }).join('');
+      nav.querySelectorAll('a').forEach(function (a) {
+        a.addEventListener('click', function (ev) {
+          /* Si demana pestanya nova, que se'n vagi pel seu compte. */
+          if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1) return;
+          ev.preventDefault(); App.ves(a.dataset.vista);
+        });
+      });
+    },
+
+    // ------------------------------------------------------------ indicadors
+
+    enLinia: function (si) {
+      if (App.enLiniaEstat === si) return;
+      App.enLiniaEstat = si;
+      document.getElementById('sense-xarxa').hidden = si;
+    },
+
+    pintaPendents: function () {
+      var n = Cua.tot().length;
+      var el = document.getElementById('pendents');
+      el.hidden = n === 0;
+      el.textContent = n === 1 ? '1 canvi pendent de desar' : n + ' canvis pendents de desar';
+    },
+
+    /**
+     * REFER UNA PANTALLA SENSE QUE SE'T MOGUI DE LLOC.
+     *
+     * Repintar una llista sencera per un canvi petit té un preu que no es veu
+     * llegint el codi i es veu de seguida fent servir l'app: has baixat fins a
+     * la setena tasca, la marques, i la pàgina et torna a dalt de tot. O puges
+     * la primera de tres fotos i has de tornar a baixar per pujar la segona.
+     *
+     * On el canvi és d'una sola cosa —treure una targeta— val més tocar només
+     * aquella i no passar per aquí. Això és per als altres casos: quan el que
+     * canvia és l'estructura i refer-ho és el més honest, però no hi ha cap
+     * raó perquè a més et faci perdre el lloc on eres.
+     *
+     * No salta al buit: si la pàgina nova és més curta, es queda al final.
+     */
+    mantenintLaVista: function (fer) {
+      var y = window.scrollY || document.documentElement.scrollTop || 0;
+      fer();
+      if (!y) return;
+      requestAnimationFrame(function () {
+        var max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        window.scrollTo(0, Math.min(y, max));
+      });
+    },
+
+    brindis: function (text, tipus) {
+      var el = document.getElementById('brindis');
+      el.innerHTML = ic(tipus === 'error' ? 'avis' : 'fet') + '<span>' + esc(text) + '</span>';
+      el.dataset.to = tipus || 'ok';
+      el.dataset.visible = '1';
+      clearTimeout(App._brindis);
+      App._brindis = setTimeout(function () { el.dataset.visible = '0'; }, tipus === 'error' ? 5000 : 2600);
+    },
+
+    // ---------------------------------------------------------------- modal
+
+    modal: function (titol, html, alTancar) {
+      var fosc = document.getElementById('fosc');
+      // Qui l'ha obert: en tancar-lo, el focus hi ha de tornar.
+      App._quiObria = document.activeElement;
+      fosc.innerHTML =
+        '<div class="modal" role="dialog" aria-modal="true" aria-label="' + esc(titol) + '">' +
+          '<div class="modal-cap"><h2>' + esc(titol) + '</h2>' +
+          '<button class="btn btn-fantasma btn-icona" data-tanca="1" aria-label="Tanca">' + ic('tancar') + '</button></div>' +
+          html +
+        '</div>';
+      fosc.dataset.obert = '1';
+      App._alTancar = alTancar || null;
+
+      fosc.querySelector('[data-tanca]').addEventListener('click', App.tancaModal);
+      fosc.addEventListener('click', function (ev) { if (ev.target === fosc) App.tancaModal(); });
+
+      var primer = fosc.querySelector('input, select, textarea, button:not([data-tanca])');
+      if (primer && primer.type !== 'button') setTimeout(function () { primer.focus(); }, 320);
+      return fosc.querySelector('.modal');
+    },
+
+    /* ------------------------------------------------------------------
+       EL VISOR: coses que es poden ENSENYAR
+
+       Una pantalla declara què sap ensenyar i amb quin nom:
+
+           App.registraVisor('habits.comptador', {
+             titol: function (p) { return 'Cigarros'; },
+             render: function (arrel, params) { ... }
+           });
+
+       I una eina de la IA diu `mostra: 'habits.comptador'`. Quan en Pol li
+       demana «ensenya'm la gràfica del tabac», JEFE obre el plafó amb allò
+       en comptes de contestar-li amb una descripció.
+
+       AFEGIR-NE UN ÉS UNA LÍNIA AL FITXER D'AQUELLA PANTALLA. El nucli no
+       sap què és una corba ni una setmana: només sap obrir el que li han
+       registrat, igual que amb les vistes.
+       ------------------------------------------------------------------ */
+    visors: {},
+
+    /**
+     * PREGUNTAR ABANS D'ESBORRAR.
+     *
+     * El calendari i les fotos de seguiment ja ho feien bé —fins i tot diuen
+     * que la foto es queda trenta dies a la paperera—, i la resta de pantalles
+     * no ho feien gens: treure un moviment del banc, arxivar una categoria,
+     * un actiu, un rebut fix o esborrar un entrenament passaven al primer toc,
+     * sense preguntar i sense poder desfer-ho.
+     *
+     * Va aquí i no a cada vista perquè el que faltava era el mateix a totes, i
+     * perquè el diàleg pot sortir des de dins d'un altre —editant un moviment,
+     * per exemple—: llavors primer es tanca el que hi ha i s'espera que
+     * l'animació acabi, que és el que ja feia el calendari a mà.
+     */
+    confirma: function (titol, explicacio, textSi, alSi) {
+      var obert = document.getElementById('fosc').dataset.obert === '1';
+      if (obert) App.tancaModal();
+      setTimeout(function () {
+        var cos = App.modal(titol,
+          '<div class="form-ajustos">' + explicacio +
+            '<button class="btn btn-primari" data-si>' + textSi + '</button>' +
+            '<button class="btn btn-secundari" data-no style="margin-top:var(--e2)">' +
+              'Deixa-ho estar</button>' +
+          '</div>');
+        cos.querySelector('[data-no]').addEventListener('click', App.tancaModal);
+        cos.querySelector('[data-si]').addEventListener('click', function () {
+          this.disabled = true;
+          alSi(this);
+        });
+      }, obert ? 220 : 0);
+    },
+
+    registraVisor: function (clau, def) { App.visors[clau] = def; },
+
+    obreVisor: function (clau, params) {
+      var def = App.visors[clau];
+      /* Ni aquí es parla de dins. Si algun dia s'obre un visor que no
+         existeix, el que ell ha de llegir és què li ha passat a ell, no que
+         a mi em falta una peça. */
+      if (!def) { App.brindis('Això encara no ho sé ensenyar.', 'error'); return null; }
+      params = params || {};
+
+      var titol = typeof def.titol === 'function' ? def.titol(params) : (def.titol || '');
+      var cos = App.modal(titol, '<div class="visor-cos"></div>');
+      var modal = cos;
+      modal.dataset.visor = '1';
+      /* Les claus van dins del plafó i no al marc del modal: han de sortir
+         a les seves cantonades, i el marc no és seu. */
+      ['d1', 'd2', 'd3', 'd4'].forEach(function (c) {
+        var e = document.createElement('span');
+        e.className = 'visor-clau ' + c;
+        modal.appendChild(e);
+      });
+
+      try { def.render(modal.querySelector('.visor-cos'), params); }
+      catch (err) {
+        modal.querySelector('.visor-cos').innerHTML = Comp.error(err, false);
+      }
+      return modal;
+    },
+
+    tancaModal: function () {
+      var fosc = document.getElementById('fosc');
+      fosc.dataset.obert = '0';
+
+      /* EL FOCUS HA DE SORTIR D'AQUÍ ABANS QUE EL TAULER, i tornar a qui
+         l'obria. Sense això passaven dues coses, i totes dues es veien:
+         llegit en veu alta, quedaves dins d'un diàleg que ja no hi és; i
+         `interactuant()` seguia dient que sí durant tot el temps que el camp
+         encara existís, o sigui que qualsevol pantalla que esperés a
+         repintar-se «quan paris de tocar coses» no es repintava mai —el
+         calendari, canviant quins mires, no s'assabentava del canvi—. */
+      var dins = document.activeElement;
+      if (dins && fosc.contains(dins)) { try { dins.blur(); } catch (e) {} }
+      var obria = App._quiObria;
+      App._quiObria = null;
+      if (obria && obria.isConnected && typeof obria.focus === 'function') {
+        try { obria.focus({ preventScroll: true }); } catch (e) {}
+      }
+
+      setTimeout(function () { if (fosc.dataset.obert !== '1') fosc.innerHTML = ''; }, 340);
+      if (App._alTancar) { var f = App._alTancar; App._alTancar = null; f(); }
+    },
+
+    // ----------------------------------------------------------------- tema
+
+    /**
+     * Pantalla de connexió. Surt quan encara no hi ha clau, i també quan se
+     * serveix de fora i no se sap a quin servidor s'ha de parlar.
+     * La clau es desa al navegador i no viatja enlloc més que al teu propi
+     * desplegament.
+     *
+     * DINS D'APPS SCRIPT NO ES DEMANA L'ADREÇA: és la de la pàgina que estàs
+     * mirant. El que sí que es demana és la clau, perquè el desplegament és
+     * anònim i ser a dins de la pàgina no demostra que siguis tu.
+     *
+     * L'ERROR SURT AL COSTAT DEL CAMP, no de brindis. El brindis sortia a
+     * baix de tot, fora del diàleg, i a la pantalla petita ni es veia: deies
+     * «Connecta», no passava res i no sabies per què.
+     */
+    connecta: function (motiu) {
+      var cfg = Servidor.config() || {};
+      var dins = dinsAppsScript();
+      var cos = App.modal('Connecta JEFE',
+        (motiu ? '<div class="avis" style="margin-bottom:var(--e4)">' + esc(motiu) + '</div>' : '') +
+        (dins ? '' :
+          '<label class="camp"><span>URL del desplegament</span>' +
+            '<input class="entrada" id="c-url" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec" ' +
+            'value="' + esc(cfg.url || '') + '" aria-describedby="c-mal"></label>') +
+        '<label class="camp"><span>Clau d\'accés</span>' +
+          '<input class="entrada" id="c-clau" type="password" autocomplete="off" ' +
+          'placeholder="la que t\'ha donat generaClauAcces()" value="' + esc(cfg.clau || '') + '" ' +
+          'aria-describedby="c-mal"></label>' +
+        '<p class="camp-mal" id="c-mal" role="alert" hidden></p>' +
+        '<p class="menut" style="margin:0 0 var(--e4)">La clau es desa només en aquest ' +
+          'navegador. No surt d\'aquí excepte cap al teu propi servidor.</p>' +
+        '<button class="btn btn-primari btn-ple" data-connecta="1">Connecta</button>');
+
+      var mal = cos.querySelector('#c-mal');
+      function diguesQue(text, quin) {
+        mal.textContent = text;
+        mal.hidden = false;
+        var camp = cos.querySelector(quin);
+        if (camp) { try { camp.focus(); } catch (e) {} }
+      }
+
+      /* EL BOTÓ S'AGAFA ARA, NO QUAN TORNI LA RESPOSTA.
+         Això era `ev.currentTarget` a dins del `.then` i del `.catch`, i
+         `currentTarget` val null quan l'esdeveniment ja s'ha acabat de
+         repartir: la resposta arriba mig segon més tard i allà ja no hi ha
+         cap botó. La línia petava, el `.catch` moria per dins i el botó es
+         quedava girant per sempre sense dir res. Amb la clau bona no es veia
+         —el modal es tancava abans—, però amb la clau dolenta et deixava
+         mirant una rodeta eterna. */
+      var boto = cos.querySelector('[data-connecta]');
+
+      boto.addEventListener('click', function () {
+        var campUrl = cos.querySelector('#c-url');
+        var url = campUrl ? campUrl.value.trim() : (cfg.url || '');
+        var clau = cos.querySelector('#c-clau').value.trim();
+        mal.hidden = true;
+
+        if (!dins && !/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(url)) {
+          diguesQue('L\'URL ha d\'acabar en /exec', '#c-url'); return;
+        }
+        if (clau.length < 20) {
+          diguesQue('La clau sembla massa curta: la de generaClauAcces() en fa 48', '#c-clau'); return;
+        }
+
+        boto.dataset.carregant = '1';
+        Servidor.desa(url, clau);
+        crida('nucli', 'ping', {})
+          .then(function () {
+            App.tancaModal(); App.brindis('Connectat');
+            App.precarrega();          // el dia que connectes, l'arrencada ja ha passat
+            App.refresca();
+          })
+          .catch(function (err) {
+            boto.dataset.carregant = '0';
+            Servidor.esborra();
+            diguesQue(err.clauDolenta ? 'La clau no és correcta'
+                    : err.xarxa ? 'No s\'ha pogut arribar al servidor. Mira l\'adreça i la connexió.'
+                    : err.message, '#c-clau');
+          });
+      });
+    },
+
+    /**
+     * FOSC I PROU.
+     *
+     * Hi havia un botó per passar a full de dia i en Pol l'ha tret: el vol
+     * fosc sempre. La funció es queda perquè és qui posa l'atribut en
+     * arrencar, però ja no pregunta res a ningú.
+     *
+     * El full clar segueix definit a l'estil i no s'esborra: és el que fa que
+     * el fosc estigui escrit com una tria i no com l'única cosa que hi ha.
+     */
+    aplicaTema: function () {
+      Cau.set('tema', 'fosc');
+      document.documentElement.setAttribute('data-tema', 'fosc');
+    },
+
+    temaActual: function () { return 'fosc'; }
+  };
+
+  /* LES DUES SORTIDES D'UNA PANTALLA D'ERROR, ESCOLTADES UN SOL COP.
+     Cada vista es cus el seu «Torna-ho a provar», que és seu i ha de ser-ho:
+     només ella sap què tornar a demanar. Aquestes dues no són de ningú en
+     particular —connectar i tornar a l'índex volen dir el mateix a tot
+     arreu—, i posar-les a cada vista seria copiar-les setze vegades. */
+  document.addEventListener('click', function (ev) {
+    var connecta = ev.target.closest && ev.target.closest('[data-connecta-ara]');
+    if (connecta) { App.connecta(); return; }
+    var inici = ev.target.closest && ev.target.closest('[data-va-inici]');
+    if (inici) { App.ves('inici'); return; }
+
+    /* I «TORNA-HO A PROVAR» TAMBÉ, PEL MATEIX MOTIU.
+       Cada vista se'l cusia pel seu compte i quatre se'l van deixar: el
+       calendari, el dia, el diari i les finances pintaven el botó i no
+       l'escoltava ningú. El premies i no passava res, que és pitjor que no
+       tenir-lo. Ara viu aquí, un sol cop, com els altres dos. */
+    var torna = ev.target.closest && ev.target.closest('[data-reintenta]');
+    if (torna) App.refresca();
+  });
+
+  document.addEventListener('keydown', function (ev) {
+    var fosc = document.getElementById('fosc');
+    if (fosc.dataset.obert !== '1') return;
+
+    if (ev.key === 'Escape') { App.tancaModal(); return; }
+
+    /* EL FOCUS NO POT SORTIR DEL QUE HI HA OBERT.
+       Amb el calaix de preguntar obert, tres tabulacions ja et deixaven als
+       botons de la pantalla del darrere —tapada per la cortina i sense poder
+       tocar-la amb el dit—, i des d allà podies recórrer tota l app sense
+       veure on eres. Escape ja el tancava bé i el focus ja tornava al botó
+       que l havia obert; el que faltava era això. */
+    if (ev.key !== 'Tab') return;
+    var dins = fosc.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), ' +
+      'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    var visibles = [];
+    for (var i = 0; i < dins.length; i++) {
+      var r = dins[i].getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) visibles.push(dins[i]);
+    }
+    if (!visibles.length) return;
+    var primer = visibles[0], ultim = visibles[visibles.length - 1];
+    var on = document.activeElement;
+    if (!fosc.contains(on)) { ev.preventDefault(); (ev.shiftKey ? ultim : primer).focus(); return; }
+    if (ev.shiftKey && on === primer) { ev.preventDefault(); ultim.focus(); }
+    else if (!ev.shiftKey && on === ultim) { ev.preventDefault(); primer.focus(); }
+  });
+
+  return { App: App, Comp: Comp, Cau: Cau, Cua: Cua, crida: crida, escriu: escriu,
+           esc: esc, ic: ic, fmt: fmt, Servidor: Servidor, dinsAppsScript: dinsAppsScript };
+})();
+
+var App = Jefe.App, Comp = Jefe.Comp, Cau = Jefe.Cau, Cua = Jefe.Cua;
+var crida = Jefe.crida, escriu = Jefe.escriu;
+var esc = Jefe.esc, ic = Jefe.ic, fmt = Jefe.fmt;
+var Servidor = Jefe.Servidor, dinsAppsScript = Jefe.dinsAppsScript;
+</script>

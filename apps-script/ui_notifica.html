@@ -1,0 +1,193 @@
+<script>
+/* =========================================================================
+   JEFE — notificacions al mòbil (client)
+
+   Demana permís, obté la fitxa del dispositiu i la registra al servidor.
+   A partir d'aquí JEFE et pot escriure encara que l'app estigui tancada.
+
+   Es carrega SOLA i mai bloqueja: si Firebase no està configurat, si el
+   navegador no en té, o si no hi ha xarxa, l'app funciona igual i el botó
+   diu per què no.
+   ========================================================================= */
+
+var Notificacions = (function () {
+
+  var SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  var NO_CONFIG = 'Els avisos només funcionen des de la pàgina publicada, ' +
+                  'no des de la finestra d\'Apps Script. Obre JEFE des de ' +
+                  'la seva adreça de sempre i torna-ho a provar.';
+  var config = null, missatgeria = null, carregant = null;
+
+  function potSerHi() {
+    return 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+  }
+
+  function permis() {
+    return potSerHi() ? Notification.permission : 'unsupported';
+  }
+
+  /** Carrega el SDK i la configuració. Un sol cop, encara que es cridi deu vegades. */
+  function prepara() {
+    if (carregant) return carregant;
+
+    /* SI EL FITXER NO HI ÉS, DIGUES-HO EN CRISTIÀ.
+       Aquesta pàgina se serveix des de dos llocs i només un té el fitxer al
+       costat: des d'Apps Script, `firebase.config.json` no existeix i la
+       resposta és la pàgina d'error del servidor. `r.json()` peta amb
+       «Unexpected non-whitespace character after JSON at position 4», i això
+       era el que sortia a la pantalla en tocar «Activa els avisos»: un
+       missatge de l'intèrpret de JavaScript, no una explicació. */
+    carregant = fetch('firebase.config.json', { cache: 'no-cache' })
+      .then(function (r) {
+        if (!r.ok) throw new Error(NO_CONFIG);
+        return r.json().catch(function () { throw new Error(NO_CONFIG); });
+      })
+      .then(function (cfg) {
+        if (!cfg.apiKey || cfg.apiKey.indexOf('POSA-HI') === 0) {
+          throw new Error('Firebase encara no està configurat. Vegeu docs/03-notificacions.md');
+        }
+        config = cfg;
+        return Promise.all([guio(SDK + 'firebase-app-compat.js'),
+                            guio(SDK + 'firebase-messaging-compat.js')]);
+      })
+      .then(function () {
+        firebase.initializeApp({
+          apiKey: config.apiKey,
+          projectId: config.projectId,
+          messagingSenderId: config.messagingSenderId,
+          appId: config.appId
+        });
+        missatgeria = firebase.messaging();
+
+        // Missatge rebut amb l'app OBERTA: no el pinta el sistema, el pintem
+        // nosaltres perquè no passi desapercebut enmig de la conversa.
+        missatgeria.onMessage(function (m) {
+          var d = (m && m.data) || {};
+          App.brindis((d.titol ? d.titol + ': ' : '') + (d.cos || 'Notificació'));
+        });
+        return true;
+      });
+
+    return carregant;
+  }
+
+  function guio(url) {
+    return new Promise(function (ok, ko) {
+      var s = document.createElement('script');
+      s.src = url; s.async = true;
+      s.onload = ok;
+      s.onerror = function () { ko(new Error('No s\'ha pogut carregar ' + url)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  /**
+   * Demana permís i registra el dispositiu.
+   * El permís s'ha de demanar SEMPRE des d'un toc: si no, Chrome el denega
+   * sense preguntar i et quedes sense poder-ho tornar a intentar.
+   */
+  function activa() {
+    if (!potSerHi()) {
+      return Promise.reject(new Error('Aquest navegador no pot rebre notificacions.'));
+    }
+
+    return Notification.requestPermission()
+      .then(function (p) {
+        if (p !== 'granted') {
+          throw new Error(p === 'denied'
+            ? 'Has denegat les notificacions. Per tornar-hi: cadenat de la barra d\'adreces → Notificacions → Permet.'
+            : 'No has respost a la petició de permís.');
+        }
+        return prepara();
+      })
+      .then(function () {
+        // Treballador propi per a les notificacions, amb abast separat del
+        // de l'app: un abast només pot tenir un treballador.
+        return navigator.serviceWorker.register('firebase-messaging-sw.js', { scope: './fcm/' });
+      })
+      .then(function (reg) {
+        return navigator.serviceWorker.ready.then(function () { return reg; });
+      })
+      .then(function (reg) {
+        return missatgeria.getToken({ vapidKey: config.vapidKey, serviceWorkerRegistration: reg });
+      })
+      .then(function (fitxa) {
+        if (!fitxa) throw new Error('Firebase no ha donat cap fitxa per a aquest dispositiu.');
+        return crida('nucli', 'registraDispositiu', { fitxa: fitxa, nom: nomDispositiu() });
+      })
+      .then(function () {
+        Cau.set('notificacions', true);
+        return true;
+      });
+  }
+
+  function nomDispositiu() {
+    var ua = navigator.userAgent;
+    var sistema = /Android/i.test(ua) ? 'Android'
+                : /iPhone|iPad/i.test(ua) ? 'iPhone'
+                : /Windows/i.test(ua) ? 'Windows'
+                : /Mac/i.test(ua) ? 'Mac' : 'Desconegut';
+    var instalada = matchMedia('(display-mode: standalone)').matches;
+    return sistema + (instalada ? ' · app instal·lada' : ' · navegador');
+  }
+
+  /** Estat per a la pantalla, sense demanar res ni carregar res. */
+  function estat() {
+    return {
+      potSerHi: potSerHi(),
+      permis: permis(),
+      activades: permis() === 'granted' && Cau.get('notificacions', false)
+    };
+  }
+
+  /**
+   * Cada cop que obres l'app, si ja tens el permís donat:
+   *
+   *   1. Torna a registrar el treballador de servei. És l'única manera que
+   *      una versió nova hi entri: el registre només es fa en prémer el botó,
+   *      i pel seu compte Chrome només ho mira un cop al dia. Sense això pots
+   *      estar-te hores provant la versió d'abans sense cap senyal.
+   *
+   *   2. TORNA A APUNTAR LA FITXA DEL DISPOSITIU AL FULL. I això és el que
+   *      falla si no hi és: la fitxa d'FCM no és per sempre. Es renova sola
+   *      —quan netegis les dades del lloc, quan reinstal·lis l'app, o quan a
+   *      Firebase li sembla—, i el dia que es renova, la que hi ha desada al
+   *      full deixa de servir. Des de fora no es veu res: els avisos
+   *      senzillament deixen d'arribar, i no te n'assabentes fins que en
+   *      trobes a faltar un. Tornar-la a apuntar cada cop que obres l'app fa
+   *      que això es curi sol.
+   *
+   *      Al full és un «desa» per fitxa, o sigui que no s'hi acumula res: si
+   *      és la mateixa, només se'n refresca la data.
+   */
+  function actualitza() {
+    if (!potSerHi() || Notification.permission !== 'granted') return;
+
+    navigator.serviceWorker.register('firebase-messaging-sw.js', { scope: './fcm/' })
+      .then(function (reg) {
+        reg.update();
+        return prepara().then(function () { return reg; });
+      })
+      .then(function (reg) {
+        return missatgeria.getToken({ vapidKey: config.vapidKey, serviceWorkerRegistration: reg });
+      })
+      .then(function (fitxa) {
+        if (!fitxa) return;
+        // Si és la mateixa que ja vam apuntar, no cal molestar el servidor.
+        if (Cau.get('fitxa', '') === fitxa) return;
+        return crida('nucli', 'registraDispositiu', { fitxa: fitxa, nom: nomDispositiu() })
+          .then(function () { Cau.set('fitxa', fitxa); Cau.set('notificacions', true); });
+      })
+      .catch(function () { /* sense xarxa o sense clau: ja hi tornarem demà */ });
+  }
+
+  /* Passats uns segons de l'arrencada, no durant.
+     Ara això baixa el SDK de Firebase per poder demanar la fitxa, i el que
+     mana en obrir l'app és que la primera pantalla surti de seguida. Cinc
+     segons més tard no els nota ningú, i la fitxa es refresca igual. */
+  setTimeout(actualitza, 5000);
+
+  return { potSerHi: potSerHi, permis: permis, estat: estat, activa: activa,
+           actualitza: actualitza };
+})();
+</script>

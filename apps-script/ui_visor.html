@@ -1,0 +1,205 @@
+<script>
+/* =========================================================================
+   JEFE — EL VISOR GENÈRIC
+
+   EL PROBLEMA QUE RESOL, i és de fons:
+
+     Registrar un visor per cada cosa que es pot ensenyar vol dir que algú
+     —jo— ha de fer la llista de què vols veure. I la llista sempre serà
+     curta i sempre hi faltarà justament el que li demanis aquell dia.
+
+     Aquí s'inverteix. No hi ha una llista de coses ensenyables: hi ha
+     QUATRE FORMES de dibuixar, i qualsevol eina que sàpiga tornar les seves
+     dades en una d'elles ja es pot ensenyar. Afegir-ne una de nova no és
+     tocar aquest fitxer: és que una eina que ja existeix retorni `_visor`.
+
+   LES FORMES, i per què només aquestes:
+
+     llista   coses una sota l'altra. Els esdeveniments d'un dia, les
+              tasques d'una llista, les relacions trobades.
+     linia    una sèrie en el temps. El pes, les calories, els cigarros.
+     barres   quantitats comparables. La despesa per categories.
+     taula    files i columnes, quan les xifres s'han de comparar en dues
+              direccions alhora.
+
+     Amb aquestes quatre s'ensenya tot el que aquesta app té avui. Una
+     cinquena seria una forma que no sabria llegir ningú: el que fa que un
+     dibuix s'entengui de cop és haver-ne vist un d'igual abans.
+
+   QUI DECIDEIX QUÈ S'ENSENYA: en Pol, dient-ho. Les eines porten un
+   `ensenya` que el model posa quan ell ha demanat VEURE una cosa; si només
+   pregunta, contesten amb paraules i no s'obre res.
+
+   FORMA DEL QUE ARRIBA:
+
+     { titol, mena, unitat, dades: [...], peu: ['...'], buit: '...' }
+
+       llista → [{ text, menut, marca, urgent, fet }]
+       linia  → [{ x: 'AAAA-MM-DD' o etiqueta, v: número }]
+       barres → [{ etiqueta, v }]
+       taula  → { caps: [...], files: [[...]] }
+   ========================================================================= */
+
+var Visor = (function () {
+
+  function num(n, dec) {
+    var v = Number(n) || 0;
+    var s = (dec === undefined ? String(Math.round(v * 10) / 10) : v.toFixed(dec));
+    return s.replace('.', ',');
+  }
+
+  /* Una data com la diries. Si el que arriba no és una data, es deixa tal
+     com ve: l'etiqueta d'una barra pot ser «Menjar» i no s'ha de tocar. */
+  function etiqueta(x) {
+    var m = String(x || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return String(x || '');
+    return Number(m[3]) + ' ' + ['gen', 'feb', 'març', 'abr', 'maig', 'juny',
+      'jul', 'ag', 'set', 'oct', 'nov', 'des'][Number(m[2]) - 1];
+  }
+
+  // ------------------------------------------------------------- les formes
+
+  /* Coses una sota l'altra. La marca de l'esquerra sempre a la mateixa
+     amplada perquè l'ull hi pugui baixar sense tornar enrere: és el mateix
+     criteri que a la pàgina del dia. */
+  function llista(dades) {
+    return '<ul class="vis-llista">' + dades.map(function (x) {
+      return '<li' + (x.urgent ? ' data-urgent="1"' : '') +
+             (x.fet ? ' data-fet="1"' : '') + '>' +
+        '<span class="vis-marca">' + esc(x.marca || '·') + '</span>' +
+        '<span class="vis-cos">' +
+          '<span class="vis-text">' + esc(x.text || '') + '</span>' +
+          (x.menut ? '<span class="menut">' + esc(x.menut) + '</span>' : '') +
+        '</span>' +
+      '</li>';
+    }).join('') + '</ul>';
+  }
+
+  /* La línia es deixa dibuixada DESPRÉS, amb l'amplada real: amb un viewBox
+     fix i `preserveAspectRatio="none"` els punts surten el·líptics, i un
+     cercle estirat es veu de seguida. Aquí només queda el forat amb les
+     dades a dins. És el mateix que fa la pantalla de Seguiment. */
+  function linia(dades, p) {
+    if (dades.length < 2) {
+      return '<p class="menut">Amb un sol punt encara no hi ha línia.</p>';
+    }
+    var etiquetes = dades.map(function (d) {
+      return etiqueta(d.x) + ' ' + num(d.v) + (p.unitat ? ' ' + p.unitat : '');
+    });
+    return '<svg class="vis-linia" role="img" data-linia=\'' +
+             esc(JSON.stringify(dades.map(function (d) { return Number(d.v) || 0; }))) +
+             '\' aria-label="' + esc(etiquetes.join(', ')) + '"></svg>' +
+      '<div class="vis-eix"><span>' + esc(etiqueta(dades[0].x)) + '</span>' +
+        '<span>' + esc(etiqueta(dades[dades.length - 1].x)) + '</span></div>';
+  }
+
+  function dibuixaLinia(dins) {
+    (dins || document).querySelectorAll('[data-linia]').forEach(function (svg) {
+      var v;
+      try { v = JSON.parse(svg.getAttribute('data-linia')); } catch (e) { return; }
+      var A = Math.round(svg.clientWidth), H = Math.round(svg.clientHeight);
+      if (!A || !H || v.length < 2) return;
+
+      var m = 8;
+      var min = Math.min.apply(null, v), max = Math.max.apply(null, v);
+      /* EL ZERO NO SEMPRE ÉS A BAIX, i aquí és a posta el contrari que als
+         comptadors: una sèrie de pesos entre 78 i 80 dibuixada des de zero
+         és una ratlla plana que no diu res. El que es mira aquí és el
+         moviment, i per això l'escala s'ajusta al que hi ha, amb un marge
+         perquè la línia no toqui les vores. */
+      var marge = (max - min) || 1;
+      min -= marge * 0.15; max += marge * 0.15;
+
+      var pas = (A - m * 2) / (v.length - 1);
+      var xy = v.map(function (valor, i) {
+        return {
+          x: Math.round((m + i * pas) * 10) / 10,
+          y: Math.round((m + (1 - (valor - min) / (max - min)) * (H - m * 2)) * 10) / 10
+        };
+      });
+      var ultim = xy[xy.length - 1];
+
+      svg.setAttribute('viewBox', '0 0 ' + A + ' ' + H);
+      svg.innerHTML =
+        '<polyline class="vis-traç" points="' +
+          xy.map(function (q) { return q.x + ',' + q.y; }).join(' ') + '"/>' +
+        (v.length <= 40 ? xy.map(function (q) {
+          return '<circle class="vis-punt" cx="' + q.x + '" cy="' + q.y + '" r="2.2"/>';
+        }).join('') : '') +
+        '<circle class="vis-punt vis-ara" cx="' + ultim.x + '" cy="' + ultim.y + '" r="3.6"/>';
+    });
+  }
+
+  /* Barres horitzontals i no verticals: les etiquetes són paraules
+     —«Supermercat», «Benzina»— i en vertical no hi caben sense girar-les,
+     i un text girat no es llegeix, es desxifra. */
+  function barres(dades, p) {
+    var sostre = 0;
+    dades.forEach(function (d) { var v = Math.abs(Number(d.v) || 0); if (v > sostre) sostre = v; });
+    if (!sostre) sostre = 1;
+
+    return '<div class="vis-barres">' + dades.map(function (d) {
+      var v = Math.abs(Number(d.v) || 0);
+      return '<div class="vis-barra">' +
+        '<span class="vis-barra-nom">' + esc(d.etiqueta || '') + '</span>' +
+        '<span class="vis-barra-riu"><i style="width:' +
+          Math.max(1, Math.round((v / sostre) * 100)) + '%"></i></span>' +
+        '<span class="vis-barra-val">' + esc(num(d.v) + (p.unitat ? ' ' + p.unitat : '')) +
+        '</span>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  function taula(dades) {
+    var caps = dades.caps || [], files = dades.files || [];
+    return '<div class="vis-taula-fora"><table class="vis-taula">' +
+      (caps.length ? '<thead><tr>' + caps.map(function (c) {
+        return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead>' : '') +
+      '<tbody>' + files.map(function (f) {
+        return '<tr>' + f.map(function (c) {
+          return '<td>' + esc(c === null || c === undefined ? '—' : c) + '</td>';
+        }).join('') + '</tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+
+  function peu(p) {
+    var l = (p.peu || []).filter(Boolean);
+    if (!l.length) return '';
+    return '<div class="visor-peu">' + l.map(function (x) {
+      return '<span>' + esc(x) + '</span>'; }).join('') + '</div>';
+  }
+
+  return {
+    render: function (arrel, p) {
+      p = p || {};
+      var dades = p.dades;
+      var buit = !dades || (dades.length === 0) ||
+                 (p.mena === 'taula' && !(dades.files || []).length);
+
+      if (buit) {
+        arrel.innerHTML = '<p class="menut">' +
+          esc(p.buit || 'Aquí no hi ha res per ensenyar.') + '</p>';
+        return;
+      }
+
+      var formes = { llista: llista, linia: linia, barres: barres, taula: taula };
+      var forma = formes[p.mena] || llista;
+      arrel.innerHTML = forma(dades, p) + peu(p);
+
+      if (p.mena === 'linia') {
+        /* De seguida i un cop més al cap d'un moment: la disposició ja és
+           feta, però el plafó encara s'està obrint i l'amplada no és la
+           definitiva fins que ha acabat. Res de `requestAnimationFrame`:
+           si la pestanya no compon fotogrames, no s'executa mai. */
+        dibuixaLinia(arrel);
+        setTimeout(function () { if (arrel.isConnected) dibuixaLinia(arrel); }, 80);
+      }
+    }
+  };
+})();
+
+App.registraVisor('nucli.dades', {
+  titol: function (p) { return (p && p.titol) || 'JEFE'; },
+  render: function (arrel, p) { Visor.render(arrel, p); }
+});
+</script>
