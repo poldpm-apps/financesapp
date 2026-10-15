@@ -2619,6 +2619,11 @@ console.log('\nFinances: viu a /financesapp/, porta el seu nom i troba les coses
 {
   const manifest = JSON.parse(fs.readFileSync('manifest.webmanifest', 'utf8'));
   cal("el manifest té l'id de finances, no el de JEFE", manifest.id === '/financesapp/', manifest.id);
+  /* A poldpm.github.io el mòbil té una app amagada que no hi deixa instal·lar
+     res: les apps viuen a poldpm-apps, com Nutrició i el cos. */
+  const despl = fs.readFileSync('eines/desplega.mjs', 'utf8');
+  cal('es comprova la pàgina publicada a poldpm-apps, no a poldpm',
+      /poldpm-apps\.github\.io\/financesapp\//.test(despl) && !/\/\/poldpm\.github\.io/.test(despl));
   cal('i les adreces relatives, que viatgen soles',
       manifest.start_url === './' && manifest.scope === './', manifest.start_url + ' · ' + manifest.scope);
 

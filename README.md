@@ -3,7 +3,7 @@
 Les finances del mes, connectades al banc: el que entra, el que surt i el que
 queda. Surt de l'apartat de **Finances** de JEFE i fa exactament el mateix.
 
-- **L'app:** <https://poldpm.github.io/financesapp/>
+- **L'app:** <https://poldpm-apps.github.io/financesapp/>
 - **Les dades:** un full de càlcul propi, «Finances», al teu Drive. Les set
   pestanyes es **copien** del full de JEFE, que es queda intacte de còpia de
   seguretat.
@@ -104,6 +104,9 @@ Les finances no fan servir la IA: no cal `CLAU_IA`.
   vol dir que, per a Chrome, és una altra app.
 - Hi ha icones PNG de 192 i 512 i una de retallable: Android no instal·la
   l'app amb només SVG.
-- L'app de finances del juliol vivia a `/finances/` del mateix domini. Les
-  dades que hagués desat al mòbil (`finances_v1`) no es toquen, i la seva
-  memòria cau tampoc. Si encara la tens instal·lada, la pots treure.
+- **L'app viu a `poldpm-apps.github.io`, no a `poldpm.github.io`**, com
+  Nutrició i el cos. Al mòbil hi ha una app amagada i trencada que reclama tot
+  el domini `poldpm.github.io` i no hi deixa instal·lar res.
+- L'app de finances del juliol vivia a `poldpm.github.io/finances/`, un altre
+  domini: no comparteixen ni memòria ni dades. Si encara la tens instal·lada,
+  la pots treure.

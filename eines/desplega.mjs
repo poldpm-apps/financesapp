@@ -171,7 +171,7 @@ try {
        parla del que ell veu. */
     const marca = (fs.readFileSync('index.html', 'utf8')
       .match(/MARCA_JEFE = "([^"]*)"/) || [])[1];
-    const url = 'https://poldpm.github.io/financesapp/index.html?comprova=' + Date.now();
+    const url = 'https://poldpm-apps.github.io/financesapp/index.html?comprova=' + Date.now();
     let publicada = null;
     try {
       const r = await fetch(url, { cache: 'no-store' });
@@ -188,7 +188,7 @@ try {
       console.log('    Servit: ' + publicada);
       console.log('');
       console.log('    Pages triga un minut o dos. Si al cap d\'una estona segueix igual,');
-      console.log('    mira github.com/poldpm/financesapp → pestanya Actions → «pages build and');
+      console.log('    mira github.com/poldpm-apps/financesapp → pestanya Actions → «pages build and');
       console.log('    deployment»: allà hi surt si la publicació ha fallat.');
     }
   }

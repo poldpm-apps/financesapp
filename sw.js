@@ -17,14 +17,12 @@
  */
 
 /* EL NOM PORTA L'APP AL DAVANT, I NOMÉS S'ESBORREN LES SEVES.
-   Nutrició, el cos i les finances comparteixen poldpm.github.io, i la memòria
-   cau del navegador és UNA per a tot el domini. Amb un nom genèric i esborrant
-   «tot el que no sigui meu», cada app que s'actualitzés buidaria la de les
-   altres. */
-/* «financesapp-» I NO «finances-». L'app de finances del juliol vivia a
-   /finances/ del mateix domini i la seva memòria cau es deia «finances-v1».
-   Amb un prefix que la inclogués, en activar-se aquesta l'esborraria, i no és
-   seva. Amb aquest, cadascuna només toca la que és seva. */
+   Nutrició, el cos i les finances comparteixen poldpm-apps.github.io, i la
+   memòria cau del navegador és UNA per a tot el domini. Amb un nom genèric i
+   esborrant «tot el que no sigui meu», cada app que s'actualitzés buidaria la
+   de les altres. */
+/* «financesapp-» I NO «finances-»: un prefix que en podria atrapar un altre
+   (l'app de finances del juliol es deia «finances-v1») no és prou seu. */
 var PREFIX = 'financesapp-';
 var CAU = PREFIX + 'v1';
 var ESSENCIALS = [

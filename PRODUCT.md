@@ -42,7 +42,7 @@ surt.
 
 - Les dades viuen en un full de càlcul de Google propi (copiat del de JEFE, que
   es queda intacte de còpia de seguretat). El servidor és Apps Script; la
-  pantalla la serveix GitHub Pages a `poldpm.github.io/financesapp`,
+  pantalla la serveix GitHub Pages a `poldpm-apps.github.io/financesapp`,
   instal·lable al mòbil.
 - **El banc només dona 90 dies enrere.** El que és més vell que això no es pot
   tornar a baixar: si es perd del full, es perd. Les dades mai es mouen ni
