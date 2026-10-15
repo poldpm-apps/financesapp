@@ -25,6 +25,22 @@
         });
       });
     }
+
+    /* EL BOTÓ D'INSTAL·LAR, DE LA PÀGINA I NO DEL MENÚ. Al mòbil d'en Pol, el
+       menú de Chrome diu «ja està instal·lada» i només deixa crear una drecera
+       quan al mateix domini ja hi ha una altra app; el botó de la pàgina, que
+       crida la instal·lació del navegador directament, sí que la instal·la (va
+       passar amb la de nòmines i amb l'app del cos). L'avís arriba d'hora,
+       abans que l'app s'engegui: per això es desa aquí i el mes el recull. */
+    addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      window.__potInstallar = e;
+      document.dispatchEvent(new Event('pot-installar'));
+    });
+    addEventListener('appinstalled', function () {
+      window.__potInstallar = null;
+      document.dispatchEvent(new Event('installada'));
+    });
   </script>
   <style>
 /* =========================================================================
@@ -668,7 +684,7 @@ button.fila:active { background: var(--camp-alt); }
 <body>
 <!-- GENERAT PER eines/construeix.mjs — NO EDITIS AQUEST FITXER.
      La font són els fitxers de apps-script/. Torna a executar npm run construeix. -->
-<script>window.MARCA_JEFE = "2026-10-15 23:03 · en curs";</script>
+<script>window.MARCA_JEFE = "2026-10-15 23:05 · en curs";</script>
 <!--
   THESIS: el mes és un tall de terreny. Per sobre del nivell, el que entra; per
     sota, el que surt; on acaben totes dues línies és el que t'has quedat. És la
@@ -865,7 +881,7 @@ button.fila:active { background: var(--camp-alt); }
 
 <script>
 /* GENERAT PER eines/construeix.mjs — NO EDITIS AQUEST FITXER. */
-window.MARCA_JEFE = "2026-10-15 23:03 · en curs";
+window.MARCA_JEFE = "2026-10-15 23:05 · en curs";
 </script>
 
 <script>
@@ -2267,14 +2283,80 @@ App.registraVista('finances', {
          mateix ordre. */
       arrel.innerHTML = capcalera(esActual) +
         '<div class="pagina pagina-mes">' +
-          '<div class="mes-esquerra">' + cridaAvisos() + blocBalanc(d, esActual) + '</div>' +
+          '<div class="mes-esquerra">' + cridaInstallar() + cridaAvisos() + blocBalanc(d, esActual) + '</div>' +
           '<div class="mes-dreta">' + blocMoviments(d) + blocCategories(d) + '</div>' +
         '</div>';
 
       lligaCapcalera();
       lligaMoviments();
+      lligaInstallar();
       lligaAvisos();
     }
+
+    /* INSTAL·LAR-LA AMB EL BOTÓ DE LA PÀGINA.
+       El menú de Chrome, al mòbil d'en Pol, diu «ja està instal·lada» i només
+       deixa crear una drecera quan al domini ja hi ha una altra app. El botó de
+       la pàgina crida la instal·lació del navegador directament i sí que
+       funciona. Surt només si el navegador diu que es pot instal·lar i l'app no
+       s'ha obert ja des de la icona. */
+    function cridaInstallar() {
+      if (!window.__potInstallar) return '';
+      if (window.matchMedia && matchMedia('(display-mode: standalone)').matches) return '';
+      return '<section class="crida-avisos" aria-label="Instal·lar l\'app">' +
+        ic('finances') +
+        '<div>' +
+          '<b>Instal·la l\'app en aquest aparell</b>' +
+          '<p>Amb aquest botó i no amb el menú del navegador: s\'obrirà sola, a pantalla completa, des de la seva icona.</p>' +
+          '<button class="btn btn-primari" data-installa>Instal·la l\'app</button>' +
+        '</div>' +
+      '</section>';
+    }
+
+    function lligaInstallar() {
+      var b = arrel.querySelector('[data-installa]');
+      if (!b) return;
+      b.addEventListener('click', function () {
+        var avis = window.__potInstallar;
+        if (!avis) return;
+        b.dataset.carregant = '1';
+        avis.prompt();
+        avis.userChoice.then(function (r) {
+          /* L'avís només es pot fer servir un cop: si diu que no, el navegador
+             en tornarà a enviar un altre més endavant. */
+          window.__potInstallar = null;
+          if (r && r.outcome === 'accepted') App.brindis('Instal·lant l\'app…');
+          var c = b.closest('.crida-avisos');
+          if (c) c.remove();
+        }).catch(function () {
+          b.dataset.carregant = '0';
+        });
+      });
+    }
+
+    /* El navegador avisa quan vol, sovint després que la pantalla ja s'hagi
+       pintat: llavors s'hi afegeix el botó, sense repintar el mes. */
+    function quanPotInstallar() {
+      if (!arrel.isConnected || periode !== 'mes' || arrel.querySelector('[data-installa]')) return;
+      var esq = arrel.querySelector('.mes-esquerra');
+      if (!esq) return;
+      esq.insertAdjacentHTML('afterbegin', cridaInstallar());
+      lligaInstallar();
+    }
+    function quanInstallada() {
+      var c = arrel.isConnected && arrel.querySelector('[data-installa]');
+      if (c) c.closest('.crida-avisos').remove();
+      if (arrel.isConnected) App.brindis('App instal·lada: ja la tens a la pantalla d\'inici');
+    }
+    /* Un sol oient de cada, el de l'última pantalla pintada: aquesta funció
+       s'executa cada cop que canvies de mes o de període, i sense treure els
+       d'abans se n'acumularien. */
+    if (window.__finOients) {
+      document.removeEventListener('pot-installar', window.__finOients.pot);
+      document.removeEventListener('installada', window.__finOients.feta);
+    }
+    window.__finOients = { pot: quanPotInstallar, feta: quanInstallada };
+    document.addEventListener('pot-installar', quanPotInstallar);
+    document.addEventListener('installada', quanInstallada);
 
     /**
      * «NO REBO ELS AVISOS QUE HAURIA DE REBRE.»

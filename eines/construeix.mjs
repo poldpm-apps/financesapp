@@ -102,6 +102,22 @@ const INSTALLACIO = `
         });
       });
     }
+
+    /* EL BOTÓ D'INSTAL·LAR, DE LA PÀGINA I NO DEL MENÚ. Al mòbil d'en Pol, el
+       menú de Chrome diu «ja està instal·lada» i només deixa crear una drecera
+       quan al mateix domini ja hi ha una altra app; el botó de la pàgina, que
+       crida la instal·lació del navegador directament, sí que la instal·la (va
+       passar amb la de nòmines i amb l'app del cos). L'avís arriba d'hora,
+       abans que l'app s'engegui: per això es desa aquí i el mes el recull. */
+    addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      window.__potInstallar = e;
+      document.dispatchEvent(new Event('pot-installar'));
+    });
+    addEventListener('appinstalled', function () {
+      window.__potInstallar = null;
+      document.dispatchEvent(new Event('installada'));
+    });
   <\/script>`;
 
 html = html.replace('<!--INSTALLACIO-->', INSTALLACIO);

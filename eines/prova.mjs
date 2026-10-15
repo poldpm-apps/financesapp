@@ -2768,5 +2768,20 @@ console.log('\nEl tall del mes: els moviments de debò, i res inventat');
       linia(buit, 'entra').slice(0, 60));
 }
 
+// ------------------------------------------------ instal·lar-la amb el botó
+/* Al mòbil d'en Pol, el menú de Chrome només deixa crear una drecera quan al
+   domini ja hi ha una altra app instal·lada. El botó de la pàgina, que crida
+   la instal·lació del navegador directament, sí que funciona. */
+console.log("\nInstal·lar: amb el botó de la pàgina, que el menú no ho deixa");
+{
+  const cons = fs.readFileSync('eines/construeix.mjs', 'utf8');
+  const vf = fs.readFileSync('apps-script/vista_finances.html', 'utf8');
+  cal("l'avís del navegador es desa d'hora, a la capçalera de la pàgina publicada",
+      /beforeinstallprompt[\s\S]{0,120}e\.preventDefault\(\);\s*window\.__potInstallar = e;/.test(cons));
+  cal("el mes hi posa el botó i crida la instal·lació", /data-installa/.test(vf) && /avis\.prompt\(\)/.test(vf));
+  cal("i no surt si ja s'ha obert des de la icona", /display-mode: standalone/.test(vf));
+  cal("i els oients no s'acumulen a cada pantalla", /removeEventListener\('pot-installar'/.test(vf));
+}
+
 console.log(falles ? '\n' + falles + ' falla(des).\n' : '\nTot correcte.\n');
 process.exit(falles ? 1 : 0);
