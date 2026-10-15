@@ -1,7 +1,7 @@
 /**
  * Finances — MIRALL: l'app de debò al navegador, amb un servidor fingit
  *
- *   npm run mirall [vista]        inici · finances
+ *   npm run mirall [vista]        finances
  *
  * Agafa el `index.html` construït —el mateix codi que et serveix Apps Script—
  * i, just abans de l'arrencada, canvia `crida()` i `escriu()` per un servidor
@@ -25,7 +25,7 @@ import fs from 'fs';
 import path from 'path';
 import { dades } from './mirall-dades.mjs';
 
-const VISTA = process.argv[2] || 'inici';
+const VISTA = process.argv[2] || 'finances';
 const CARPETA = process.env.MIRALL_CARPETA || '.mirall';
 
 const ARA = new Date();
@@ -251,7 +251,7 @@ if (fs.existsSync('fonts')) {
 
 /* Les dues amplades alhora. Els desbordaments no es veuen mai a la finestra
    tal com la tens: es veuen quan poses la pantalla a 375 de debò. */
-const VISTES = ['inici', 'finances'];
+const VISTES = ['finances'];
 fs.writeFileSync(path.join(CARPETA, 'amplades.html'), `<!doctype html>
 <meta charset="utf-8"><title>Finances · amplades</title>
 <style>

@@ -1,6 +1,6 @@
 <script>
-/* JEFE — MÒDUL · Finances
-   Món: full de mapa topogràfic. Ve de l'app «finances» i parla l'idioma de JEFE.
+/* FINANCES — la pantalla
+   Món: «el tall del mes», germà de Nutrició i del cos (vegeu DESIGN.md).
 
    LA DECISIÓ QUE MANA, i és la seva pròpia: apuntar una despesa ha de ser
    instantani. Per això el botó d'apuntar és el primer que es veu i el
@@ -72,19 +72,36 @@ App.registraVista('finances', {
                : periode === 'patrimoni' ? 'que tens'
                : (PERIODES.filter(function (p) { return p[0] === periode; })[0] || ['', 'Mes'])[1];
 
-      return '<h1 class="nomes-lectors">Finances</h1>' +
-        '<header class="capcalera capcalera-nutri">' +
-        '<div class="capcalera-fila">' +
-          '<button class="btn btn-fantasma btn-icona" data-torna="1" aria-label="Torna al full índex">' +
-            ic('mapa', 'ic-p') + '</button>' +
+      /* LA MARCA A DALT I EL PERÍODE A SOTA. No hi ha botó de tornar: l'app
+         és aquesta pantalla, i el full índex de JEFE ja no existeix. */
+      return '<header class="capcalera">' +
+        '<div class="cap-fila">' +
+          '<span class="marca">' + ic('finances') + '<span class="gravat tinta">Finances</span></span>' +
+          '<div class="cap-accions">' +
+          /* El «+» de la capçalera NOMÉS on no hi ha el botó gros.
+             A la pantalla del mes, «Apunta un moviment» ja és just a sota del
+             balanç i a amplada sencera: tenir-hi a més una creueta petita a
+             dalt que fa exactament el mateix no dona cap opció, només fa
+             dubtar de si són dues coses diferents. A la resta de pantalles
+             —els mesos, les estadístiques, la safata— el botó gros no hi és,
+             i sense la creueta et quedaries sense manera d'apuntar res. */
+          (periode === 'mes' ? '' :
+            '<button class="btn btn-fantasma btn-icona" data-apunta="1" aria-label="Apunta un moviment">' +
+              ic('mes') + '</button>') +
+          '<button class="btn btn-fantasma btn-icona" data-ajustos="1" aria-label="Categories i importació">' +
+            ic('ajust') + '</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="cap-periode' + (mostraFletxes ? '' : ' sense-fletxes') + '">' +
           (mostraFletxes
             ? '<button class="btn btn-fantasma btn-icona" data-salt="-1" aria-label="Mes anterior">' +
-              ic('esquerra', 'ic-p') + '</button>' : '') +
-          '<button class="titol-periode" data-obre-periode="1" aria-label="' +
+              ic('esquerra') + '</button>' : '') +
+          '<h1><button class="titol-periode" data-obre-periode="1" aria-haspopup="dialog" aria-label="' +
             esc(titol + '. Tria què vols veure') + '">' +
             '<b>' + esc(titol) + '</b>' +
-            '<span>' + esc(sota) + (esActual && periode === 'mes' ? ' · en curs' : '') + ' ▾</span>' +
-          '</button>' +
+            '<span class="gravat">' + esc(sota) + (esActual && periode === 'mes' ? ' · en curs' : '') +
+              ic('avall') + '</span>' +
+          '</button></h1>' +
           /* AQUÍ HI HAVIA «Banc mirat fa 3 minuts», i s'ha tret.
              L'argument era que el número de sota només vol dir alguna cosa si
              saps de quan és. Amb tres sincronitzacions al dia i el fitxer
@@ -95,19 +112,7 @@ App.registraVista('finances', {
              `diagnostic()`, que és on es va a mirar quan de debò importa. */
           (mostraFletxes
             ? '<button class="btn btn-fantasma btn-icona" data-salt="1" aria-label="Mes següent"' +
-              (esActual ? ' disabled' : '') + '>' + ic('dreta', 'ic-p') + '</button>' : '') +
-          /* El «+» de la capçalera NOMÉS on no hi ha el botó gros.
-             A la pantalla del mes, «Apunta un moviment» ja és just a sota del
-             balanç i a amplada sencera: tenir-hi a més una creueta petita a
-             dalt que fa exactament el mateix no dona cap opció, només fa
-             dubtar de si són dues coses diferents. A la resta de pantalles
-             —els mesos, les estadístiques, la safata— el botó gros no hi és,
-             i sense la creueta et quedaries sense manera d'apuntar res. */
-          (periode === 'mes' ? '' :
-            '<button class="btn btn-fantasma btn-icona" data-apunta="1" aria-label="Apunta un moviment">' +
-              ic('mes', 'ic-p') + '</button>') +
-          '<button class="btn btn-fantasma btn-icona" data-ajustos="1" aria-label="Ajustos">' +
-            ic('ajust', 'ic-p') + '</button>' +
+              (esActual ? ' disabled' : '') + '>' + ic('dreta') + '</button>' : '') +
         '</div>' +
       '</header>';
     }
@@ -149,62 +154,201 @@ App.registraVista('finances', {
       dades = d; mes = d.mes;
       var esActual = d.mes === new Date().toISOString().slice(0, 7);
 
+      /* A l'escriptori, dues columnes: el que diu com va el mes a l'esquerra,
+         quiet, i la llista a la dreta. Al mòbil, una sola columna en aquest
+         mateix ordre. */
       arrel.innerHTML = capcalera(esActual) +
-        '<div class="pagina nutri">' +
-          '<section class="nutri-dalt">' + blocBalanc(d) + '</section>' +
-          '<section class="nutri-apats">' + blocMoviments(d) + '</section>' +
-          '<section class="nutri-tanca">' + blocCategories(d) + '</section>' +
+        '<div class="pagina pagina-mes">' +
+          '<div class="mes-esquerra">' + cridaAvisos() + blocBalanc(d, esActual) + '</div>' +
+          '<div class="mes-dreta">' + blocMoviments(d) + blocCategories(d) + '</div>' +
         '</div>';
 
       lligaCapcalera();
       lligaMoviments();
+      lligaAvisos();
     }
 
-    function blocBalanc(d) {
+    /**
+     * «NO REBO ELS AVISOS QUE HAURIA DE REBRE.»
+     *
+     * Venia de la pàgina d'inici de JEFE, i aquí no n'hi ha: l'app s'obre al
+     * mes. Els avisos del banc, del patrimoni i del vigilant de rebuts només
+     * arriben si aquest aparell ha donat permís, i el permís només el pots
+     * donar tu i només des d'un toc. Si ja el té, això no surt.
+     */
+    function cridaAvisos() {
+      if (!window.Notificacions || !Notificacions.potSerHi()) return '';
+      var p = Notificacions.permis();
+      if (p === 'granted') return '';
+
+      var negat = p === 'denied';
+      return '<section class="crida-avisos" aria-label="Avisos en aquest aparell">' +
+        ic('campana') +
+        '<div>' +
+          '<b>Aquest aparell no rep avisos</b>' +
+          '<p>' + (negat
+            ? 'Has denegat les notificacions en aquest aparell. Per tornar-hi: ' +
+              'si tens l\'app instal·lada, mantén premuda la icona → Informació de ' +
+              'l\'app → Notificacions. Al navegador, el cadenat de la barra ' +
+              'd\'adreces → Notificacions → Permet.'
+            : 'Els avisos del banc, dels rebuts i del patrimoni no ' +
+              'et poden arribar aquí fins que ho activis.') + '</p>' +
+          (negat ? '' : '<button class="btn btn-primari" data-avisos>Activa els avisos</button>') +
+        '</div>' +
+      '</section>';
+    }
+
+    function lligaAvisos() {
+      var b = arrel.querySelector('[data-avisos]');
+      if (!b) return;
+      b.addEventListener('click', function () {
+        b.dataset.carregant = '1';
+        Notificacions.activa()
+          .then(function () {
+            App.brindis('Avisos activats en aquest aparell');
+            var c = arrel.querySelector('.crida-avisos');
+            if (c) c.remove();
+          })
+          .catch(function (err) {
+            b.dataset.carregant = '0';
+            App.brindis(err.message, 'error');
+          });
+      });
+    }
+
+    function blocBalanc(d, esActual) {
       var positiu = d.balanc >= 0;
-      return '<div class="fitxa" data-estat="' + (positiu ? 'deficit_assolit' : 'superavit') + '">' +
-          '<div class="xifra-gran">' + eur(d.balanc, true) + '</div>' +
-          '<p class="verdicte">' +
+      return '<section class="balanc" data-mena="' + (positiu ? 'be' : 'avis') + '">' +
+          '<p class="gravat">Balanç' + (esActual ? ' · fins avui' : '') + '</p>' +
+          '<p class="balanc-v"><span class="n num">' + eurNum(d.balanc, true) + '</span>' +
+            '<span class="u">€</span></p>' +
+          '<p class="balanc-frase">' +
             (positiu ? 'Has estalviat ' + eur(d.balanc) + ' aquest mes.'
                      : 'Has gastat ' + eur(-d.balanc) + ' més del que has ingressat.') +
           '</p>' +
-        '</div>' +
+        '</section>' +
 
-        '<div class="tres-xifres">' +
+        tall(d, esActual) +
+
+        '<div class="xifres">' +
           xifra('Ingressos', eurNum(d.ingressos), '€') +
           xifra('Despeses', eurNum(d.despeses), '€') +
           xifra('Moviments', d.moviments.length, '') +
         '</div>' +
 
-        (d.ritme
-          ? '<p class="menut">Portes ' + eur(d.ritme.perDia) + ' al dia. ' +
-            'Si segueixes així, el mes acabarà a <b class="num">' + eur(d.ritme.projeccio) + '</b>.</p>'
-          : '') +
-
-        (d.traspassos
-          ? '<p class="menut">' + eur(d.traspassos) + ' en traspassos, fora dels comptes.</p>'
+        ((d.ritme || d.traspassos)
+          ? '<div class="notes-mes">' +
+            (d.ritme
+              ? '<p class="menut">Portes ' + eur(d.ritme.perDia) + ' al dia. ' +
+                'Si segueixes així, el mes acabarà a <b class="num">' + eur(d.ritme.projeccio) + '</b>.</p>'
+              : '') +
+            (d.traspassos
+              ? '<p class="menut">' + eur(d.traspassos) + ' en traspassos, fora dels comptes.</p>'
+              : '') +
+            '</div>'
           : '') +
 
         (d.perClassificar
-          ? '<button class="btn btn-secundari" data-revisar="1" style="width:100%;margin-top:var(--e3)">' +
-            ic('llapis') + d.perClassificar + ' per classificar</button>'
+          ? '<button class="reclam" data-revisar="1">' +
+              '<span class="gravat">Per classificar</span>' +
+              '<b>' + d.perClassificar + (d.perClassificar === 1 ? ' moviment' : ' moviments') + '</b>' +
+              '<span class="enllac">Classifica' + ic('dreta') + '</span>' +
+            '</button>'
           : '') +
 
-        '<button class="btn btn-primari" data-apunta="1" style="width:100%;margin-top:var(--e4)">' +
+        '<button class="btn btn-primari btn-ple accio-gran" data-apunta="1">' +
           ic('mes') + 'Apunta un moviment</button>';
     }
 
+    /**
+     * EL TALL DEL MES: la icona, feta amb els moviments de debò.
+     *
+     * L'eix és el mes, de l'1 a l'últim dia. Per sobre del nivell, el que ha
+     * entrat, acumulat dia a dia; per sota, el que ha sortit. Les dues línies
+     * fan esglaons —un moviment és un salt, no una pendent— i es mesuren
+     * contra la mateixa escala, o sigui que on acaben diu d'un cop d'ull si
+     * el mes ha quedat per sobre o per sota.
+     *
+     * Els traspassos no hi compten, igual que no compten al balanç. Si no hi
+     * ha cap moviment, les dues línies són planes: cap cim inventat.
+     */
+    function tall(d, esActual) {
+      var W = 320, H = 132, X0 = 10, X1 = W - 10, MARGE = 6;
+      var any = Number(d.mes.slice(0, 4)), m = Number(d.mes.slice(5, 7));
+      var dies = new Date(any, m, 0).getDate();
+      var fins = esActual ? Number(new Date().toISOString().slice(8, 10)) : dies;
+
+      var fora = {};
+      (cats || []).forEach(function (c) { if (c.exclou) fora[c.id] = true; });
+      var entra = [], surt = [];
+      for (var i = 0; i <= dies; i++) { entra.push(0); surt.push(0); }
+      (d.moviments || []).forEach(function (x) {
+        if (fora[x.categoria]) return;
+        var dia = Number(String(x.data).slice(8, 10));
+        if (!dia || dia > dies) return;
+        if (x.tipus === 'i') entra[dia] += Math.abs(Number(x['import']) || 0);
+        else surt[dia] += Math.abs(Number(x['import']) || 0);
+      });
+      for (var k = 1; k <= dies; k++) { entra[k] += entra[k - 1]; surt[k] += surt[k - 1]; }
+      /* UNA SOLA ESCALA PER A TOTES DUES: un euro fa la mateixa alçada amunt
+         que avall, perquè la gràcia és comparar-les. Per això el nivell no és
+         al mig: es posa allà on hi caben totes dues senceres, com més ha
+         entrat més avall. Res no s'escapça. */
+      var total = entra[fins] + surt[fins];
+      var esc_ = total ? (H - 2 * MARGE) / total : 0;
+      var N = total ? MARGE + entra[fins] * esc_ : H / 2;
+
+      var x = function (dia) { return X0 + (X1 - X0) * dia / dies; };
+      var amunt = function (v) { return N - v * esc_; };
+      var avall = function (v) { return N + v * esc_; };
+
+      function esglaons(serie, y) {
+        var p = 'M' + x(0).toFixed(1) + ' ' + y(0).toFixed(1);
+        for (var i = 1; i <= fins; i++) {
+          p += ' H' + x(i - 1 + 0.5).toFixed(1) + ' V' + y(serie[i]).toFixed(1);
+        }
+        return p + ' H' + x(fins).toFixed(1);
+      }
+
+      var dEntra = esglaons(entra, amunt), dSurt = esglaons(surt, avall);
+      var marques = [1, 10, 20, dies].map(function (dia) {
+        return '<line class="marca-dia" x1="' + x(dia - 0.5).toFixed(1) + '" y1="' + (N - 3) +
+               '" x2="' + x(dia - 0.5).toFixed(1) + '" y2="' + (N + 3) + '"/>' +
+               '<text x="' + x(dia - 0.5).toFixed(1) + '" y="' + (H + 6) + '" text-anchor="middle">' + dia + '</text>';
+      }).join('');
+
+      var resum = 'El mes en un tall: han entrat ' + eur(entra[fins]) + ' i han sortit ' + eur(surt[fins]) + '.';
+      return '<svg class="tall" viewBox="0 0 ' + W + ' ' + (H + 10) + '" role="img" aria-label="' + esc(resum) + '">' +
+          '<path class="entra-ombra" d="' + dEntra + ' V' + N + ' H' + x(0).toFixed(1) + 'Z"/>' +
+          '<path class="surt-ombra" d="' + dSurt + ' V' + N + ' H' + x(0).toFixed(1) + 'Z"/>' +
+          (esActual && fins < dies
+            ? '<line class="avui" x1="' + x(fins).toFixed(1) + '" y1="4" x2="' + x(fins).toFixed(1) + '" y2="' + (H - 4) + '"/>'
+            : '') +
+          '<line class="nivell" x1="' + X0 + '" y1="' + N + '" x2="' + X1 + '" y2="' + N + '"/>' +
+          marques +
+          '<path class="entra" d="' + dEntra + '"/>' +
+          '<path class="surt" d="' + dSurt + '"/>' +
+        '</svg>' +
+        '<p class="tall-llegenda menut" aria-hidden="true">' +
+          '<span><i></i>Entra</span><span><i data-surt></i>Surt</span>' +
+          (esActual && fins < dies ? '<span>Avui és el ' + fins + '</span>' : '') +
+        '</p>';
+    }
+
     function xifra(etiqueta, valor, unitat) {
-      return '<div class="xifra"><span class="marge">' + esc(etiqueta) + '</span>' +
-             '<b class="num">' + esc(String(valor)) +
-             (unitat ? '<span class="u">' + esc(unitat) + '</span>' : '') + '</b></div>';
+      return '<div class="xifra"><span class="gravat">' + esc(etiqueta) + '</span>' +
+             '<span class="xifra-gran"><span class="xifra-n num">' + esc(String(valor)) + '</span>' +
+             (unitat ? '<span class="xifra-u">' + esc(unitat) + '</span>' : '') + '</span></div>';
     }
 
     /** Els moviments agrupats per dia, amb el subtotal del dia. */
     function blocMoviments(d) {
       if (!d.moviments.length) {
-        return '<p class="marge">Moviments</p>' +
-               '<p class="menut">Cap moviment aquest mes.</p>';
+        return '<section class="seccio">' +
+                 '<div class="seccio-cap"><h2>Moviments</h2></div>' +
+                 '<div class="estat"><h2>Cap moviment aquest mes</h2>' +
+                   '<p>Quan el banc en porti, sortiran aquí. També en pots apuntar un a mà.</p></div>' +
+               '</section>';
       }
 
       var perDia = {}, ordre = [];
@@ -213,44 +357,47 @@ App.registraVista('finances', {
         perDia[m.data].push(m);
       });
 
-      return '<p class="marge">Moviments</p>' +
+      return '<section class="seccio">' +
+        '<div class="seccio-cap"><h2>Moviments</h2>' +
+          '<span class="menut">' + d.moviments.length + ' aquest mes</span></div>' +
         ordre.map(function (dia) {
           var llista = perDia[dia];
           var subtotal = llista.reduce(function (s, m) {
             return s + (m.tipus === 'i' ? m.import : -m.import);
           }, 0);
 
-          return '<div class="apat">' +
-            '<div class="apat-cap">' +
-              '<h2>' + esc(fmt.relativa(dia)) + '</h2>' +
-              '<span class="num menut">' + eur(subtotal, true) + '</span>' +
+          return '<div class="dia">' +
+            '<div class="dia-cap">' +
+              '<h3 class="gravat tinta">' + esc(fmt.relativa(dia)) + '</h3>' +
+              '<span class="num">' + eur(subtotal, true) + '</span>' +
             '</div>' +
-            '<div class="apat-items">' +
-              llista.map(function (m) {
-                return '<div class="ingesta">' +
-                  '<div style="flex:1;min-width:0">' +
-                    '<div class="nm">' + esc(m.emoji ? m.emoji + ' ' : '') + esc(m.descripcio) + '</div>' +
-                    '<div class="menut">' + esc(m.categoriaNom) +
-                      (m.pendent ? ' · pendent' : '') +
-                      (!m.revisat ? ' · per revisar' : '') + '</div>' +
-                  '</div>' +
-                  '<div class="num" data-costat="' + (m.tipus === 'i' ? 'deficit' : '') + '"' +
-                    ' style="text-align:right;font-weight:700">' +
-                    (m.tipus === 'i' ? '+' : '−') + eur(m.import) +
-                  '</div>' +
-                  '<button class="btn btn-fantasma btn-icona" data-edita="' + esc(m.id) +
-                    '" aria-label="Edita">' + ic('llapis', 'ic-p') + '</button>' +
-                '</div>';
-              }).join('') +
-            '</div>' +
+            llista.map(function (m) {
+              /* TOTA LA FILA OBRE EL MOVIMENT. Abans hi havia un llapis de
+                 vint píxels al final de cada fila, i era l'únic lloc on es
+                 podia tocar. */
+              return '<button class="mov" data-edita="' + esc(m.id) + '"' +
+                ' aria-label="Edita ' + esc(m.descripcio) + ', ' + (m.tipus === 'i' ? '+' : '−') + esc(eur(m.import)) + '">' +
+                '<span class="mov-text">' +
+                  '<span class="mov-nom">' + esc(m.emoji ? m.emoji + ' ' : '') + esc(m.descripcio) + '</span>' +
+                  '<span class="mov-que">' + esc(m.categoriaNom) +
+                    (m.pendent ? ' · pendent' : '') +
+                    (!m.revisat ? ' · <b>per revisar</b>' : '') + '</span>' +
+                '</span>' +
+                '<span class="mov-import num"' + (m.tipus === 'i' ? ' data-entra' : '') + '>' +
+                  (m.tipus === 'i' ? '+' : '−') + eur(m.import) +
+                '</span>' +
+                ic('llapis') +
+              '</button>';
+            }).join('') +
           '</div>';
-        }).join('');
+        }).join('') +
+      '</section>';
     }
 
     /**
      * On van els diners, i quant en tens de marge.
      *
-     * La barra mesura contra el PRESSUPOST quan n'hi ha, i contra la
+     * El filet mesura contra el PRESSUPOST quan n'hi ha, i contra la
      * categoria més grossa quan no. Són dues preguntes diferents —«quant
      * m'he passat» i «on va més»— i cadascuna vol la seva referència.
      */
@@ -260,8 +407,9 @@ App.registraVista('finances', {
       var lim = {};
       (d.pressupostos || []).forEach(function (b) { lim[b.categoria] = b.limit; });
 
-      return '<p class="marge">On van els diners</p>' +
-        '<p class="menut">Toca una categoria per posar-hi un límit mensual.</p>' +
+      return '<section class="seccio">' +
+        '<div class="seccio-cap"><h2>On van els diners</h2></div>' +
+        '<p class="menut seccio-nota">Toca una categoria per posar-hi un límit mensual.</p>' +
         '<div class="cats">' +
           d.perCategoria.map(function (c) {
             var l = lim[c.id] || 0;
@@ -270,17 +418,18 @@ App.registraVista('finances', {
             return '<button class="cat-fila" data-cat="' + esc(c.id) + '"' +
               ' data-nom="' + esc(c.nom) + '" data-limit="' + l + '"' +
               ' aria-label="' + esc(c.nom) + ': ' + eur(c.total) +
-                (l ? ' de ' + eur(l) : '') + '">' +
+                (l ? ' de ' + eur(l) + (passat ? ', passat' : '') : '') + '">' +
               '<span class="cat-nom">' + esc(c.emoji ? c.emoji + ' ' : '') + esc(c.nom) + '</span>' +
-              '<span class="cat-via"' + (l ? ' data-limit="1"' : '') + '>' +
-                '<i style="width:' + pct.toFixed(1) + '%"' +
-                  (passat ? ' data-passat="1"' : '') + '></i></span>' +
               '<span class="cat-xifra num">' + eur(c.total) +
-                (l ? '<small' + (passat ? ' data-costat="superavit"' : '') + '>de ' + eur(l) + '</small>' : '') +
+                (l ? '<small' + (passat ? ' data-avis' : '') + '>' +
+                     (passat ? 'passat · ' : '') + 'de ' + eur(l) + '</small>' : '') +
               '</span>' +
+              '<span class="cat-via"' + (l ? ' data-limit="1"' : '') + ' aria-hidden="true">' +
+                '<i style="width:' + pct.toFixed(1) + '%"' + (passat ? ' data-passat="1"' : '') + '></i></span>' +
             '</button>';
           }).join('') +
-        '</div>';
+        '</div>' +
+      '</section>';
     }
 
     /** El límit mensual d'una categoria. Buit o zero vol dir «sense límit». */
@@ -290,9 +439,9 @@ App.registraVista('finances', {
           '<p class="menut">Quant vols gastar-hi com a màxim cada mes. Deixa-ho ' +
             'buit per treure el límit.</p>' +
           '<label><span class="marge">Límit mensual (€)</span>' +
-            '<input data-limit inputmode="decimal" class="num camp-import" value="' +
+            '<input data-limit data-primer inputmode="decimal" class="num camp-import" value="' +
               (actual ? String(actual).replace('.', ',') : '') + '" autocomplete="off"></label>' +
-          '<button class="btn btn-primari" data-desa-limit>Desa</button>' +
+          '<button class="btn btn-primari" data-desa-limit>Desa el límit</button>' +
         '</div>');
 
       cos.querySelector('[data-desa-limit]').addEventListener('click', function () {
@@ -316,30 +465,30 @@ App.registraVista('finances', {
       d.mesos.forEach(function (m) { max = Math.max(max, m.ingressos, m.despeses); });
 
       arrel.innerHTML = capcalera(true) +
-        '<div class="pagina nutri">' +
-          '<section class="nutri-dalt">' +
-            '<div class="tres-xifres">' +
-              xifra('Acumulat', eurNum(d.acumulat, true), '€') +
-              xifra('Mesos', d.mesos.length, '') +
-              xifra('En positiu', d.mesos.filter(function (m) { return m.balanc >= 0; }).length, '') +
-            '</div>' +
-          '</section>' +
-          '<section class="nutri-apats">' +
-            '<p class="marge">Ingressos i despeses, mes a mes</p>' +
-            '<div class="mesos">' +
-              d.mesos.map(function (m) {
-                return '<button class="mes-fila" data-mes="' + esc(m.mes) + '">' +
-                  '<span class="mes-nom">' + esc(m.mes.slice(5) + '/' + m.mes.slice(2, 4)) + '</span>' +
-                  '<span class="mes-barres">' +
-                    '<i data-mena="i" style="width:' + (m.ingressos / max * 100).toFixed(1) + '%"></i>' +
-                    '<i data-mena="d" style="width:' + (m.despeses / max * 100).toFixed(1) + '%"></i>' +
-                  '</span>' +
-                  '<span class="mes-xifra num" data-costat="' + (m.balanc >= 0 ? 'deficit' : 'superavit') + '">' +
-                    eur(m.balanc, true) + '</span>' +
-                '</button>';
-              }).join('') +
-            '</div>' +
-            '<p class="menut">Toca un mes per obrir-lo.</p>' +
+        '<div class="pagina">' +
+          '<div class="xifres">' +
+            xifra('Acumulat', eurNum(d.acumulat, true), '€') +
+            xifra('Mesos', d.mesos.length, '') +
+            xifra('En positiu', d.mesos.filter(function (m) { return m.balanc >= 0; }).length, '') +
+          '</div>' +
+          '<section class="seccio">' +
+            '<div class="seccio-cap"><h2>Mes a mes</h2>' +
+              '<span class="menut tall-llegenda" aria-hidden="true">' +
+                '<span><i></i>Entra</span><span><i data-surt></i>Surt</span></span></div>' +
+            d.mesos.map(function (m) {
+              return '<button class="mes-fila" data-mes="' + esc(m.mes) + '"' +
+                ' aria-label="' + esc(nomMes(m.mes) + ': entra ' + eur(m.ingressos) + ', surt ' +
+                  eur(m.despeses) + ', balanç ' + eur(m.balanc, true)) + '">' +
+                '<span class="mes-nom">' + esc(m.mes.slice(5) + '/' + m.mes.slice(2, 4)) + '</span>' +
+                '<span class="mes-barres" aria-hidden="true">' +
+                  '<i data-mena="i" style="width:' + (m.ingressos / max * 100).toFixed(1) + '%"></i>' +
+                  '<i data-mena="d" style="width:' + (m.despeses / max * 100).toFixed(1) + '%"></i>' +
+                '</span>' +
+                '<span class="mes-xifra num"' + (m.balanc < 0 ? ' data-avis' : '') + '>' +
+                  eur(m.balanc, true) + '</span>' +
+              '</button>';
+            }).join('') +
+            '<p class="menut seccio-nota">Toca un mes per obrir-lo.</p>' +
           '</section>' +
         '</div>';
 
@@ -356,62 +505,58 @@ App.registraVista('finances', {
       var maxMet = d.perMetode.length ? d.perMetode[0].total : 1;
 
       arrel.innerHTML = capcalera(d.mes === new Date().toISOString().slice(0, 7)) +
-        '<div class="pagina nutri">' +
-          '<section class="nutri-dalt">' +
-            '<div class="tres-xifres">' +
-              xifra('Despeses', eurNum(d.despeses), '€') +
-              xifra('Anterior', eurNum(d.despesesAnterior), '€') +
-              xifra('Diferència', eurNum(d.diferencia, true), '€') +
-            '</div>' +
+        '<div class="pagina">' +
+          '<div class="xifres">' +
+            xifra('Despeses', eurNum(d.despeses), '€') +
+            xifra('Anterior', eurNum(d.despesesAnterior), '€') +
+            xifra('Diferència', eurNum(d.diferencia, true), '€') +
+          '</div>' +
+
+          '<section class="seccio">' +
+            '<div class="seccio-cap"><h2>Per categoria</h2><span class="menut">contra el mes passat</span></div>' +
+            (d.perCategoria.length
+              ? '<div class="cats">' + d.perCategoria.map(function (c) {
+                  var puja = c.diferencia > 0;
+                  return '<div class="cat-fila">' +
+                    '<span class="cat-nom">' + esc(c.emoji ? c.emoji + ' ' : '') + esc(c.nom) + '</span>' +
+                    '<span class="cat-xifra num">' + eur(c.total) +
+                      (c.anterior ? '<small' + (puja ? ' data-avis' : '') + '>' +
+                        (puja ? 'puja ' : 'baixa ') + eur(c.diferencia, true) + '</small>' : '') +
+                    '</span>' +
+                    '<span class="cat-via" aria-hidden="true"><i style="width:' + c.pct.toFixed(1) + '%"></i></span>' +
+                  '</div>';
+                }).join('') + '</div>'
+              : '<p class="menut seccio-nota">Cap despesa aquest mes.</p>') +
           '</section>' +
 
-          '<section class="nutri-apats">' +
-            '<p class="marge">Per categoria, contra el mes passat</p>' +
-            '<div class="cats">' +
-              (d.perCategoria.length
-                ? d.perCategoria.map(function (c) {
-                    var puja = c.diferencia > 0;
-                    return '<div class="cat-fila" style="cursor:default">' +
-                      '<span class="cat-nom">' + esc(c.emoji ? c.emoji + ' ' : '') + esc(c.nom) + '</span>' +
-                      '<span class="cat-via"><i style="width:' + c.pct.toFixed(1) + '%"></i></span>' +
-                      '<span class="cat-xifra num">' + eur(c.total) +
-                        (c.anterior ? '<small data-costat="' + (puja ? 'superavit' : 'deficit') + '">' +
-                          eur(c.diferencia, true) + '</small>' : '') +
-                      '</span>' +
-                    '</div>';
-                  }).join('')
-                : '<p class="menut">Cap despesa aquest mes.</p>') +
-            '</div>' +
-
-            (d.perMetode.length
-              ? '<p class="marge" style="margin-top:var(--e5)">Com has pagat</p>' +
+          (d.perMetode.length
+            ? '<section class="seccio">' +
+                '<div class="seccio-cap"><h2>Com has pagat</h2></div>' +
                 '<div class="cats">' +
                   d.perMetode.map(function (m) {
-                    return '<div class="cat-fila" style="cursor:default">' +
+                    return '<div class="cat-fila">' +
                       '<span class="cat-nom">' + esc(m.metode) + '</span>' +
-                      '<span class="cat-via"><i style="width:' +
-                        (m.total / maxMet * 100).toFixed(1) + '%"></i></span>' +
                       '<span class="cat-xifra num">' + eur(m.total) + '</span>' +
+                      '<span class="cat-via" aria-hidden="true"><i style="width:' +
+                        (m.total / maxMet * 100).toFixed(1) + '%"></i></span>' +
                     '</div>';
                   }).join('') +
-                '</div>'
-              : '') +
+                '</div>' +
+              '</section>'
+            : '') +
 
-            (d.majors.length
-              ? '<p class="marge" style="margin-top:var(--e5)">Les cinc més grosses</p>' +
-                '<div class="apat"><div class="apat-items">' +
-                  d.majors.map(function (m) {
-                    return '<div class="ingesta">' +
-                      '<div style="flex:1;min-width:0">' +
-                        '<div class="nm">' + esc(m.descripcio) + '</div>' +
-                        '<div class="menut">' + esc(fmt.relativa(m.data)) + ' · ' + esc(m.categoriaNom) + '</div>' +
-                      '</div>' +
-                      '<div class="num" style="font-weight:700">' + eur(m.import) + '</div>' +
-                    '</div>';
-                  }).join('') +
-                '</div></div>'
-              : '') +
-          '</section>' +
+          (d.majors.length
+            ? '<section class="seccio">' +
+                '<div class="seccio-cap"><h2>Les cinc més grosses</h2></div>' +
+                d.majors.map(function (m) {
+                  return '<div class="fila">' +
+                    '<span><b>' + esc(m.descripcio) + '</b>' +
+                      '<span class="menut">' + esc(fmt.relativa(m.data)) + ' · ' + esc(m.categoriaNom) + '</span></span>' +
+                    '<span class="import num">' + eur(m.import) + '</span>' +
+                  '</div>';
+                }).join('') +
+              '</section>'
+            : '') +
         '</div>';
 
       lligaCapcalera();
@@ -427,23 +572,23 @@ App.registraVista('finances', {
       var actius = d.actius || [];
 
       arrel.innerHTML = capcalera(false) +
-        '<div class="pagina nutri">' +
-          '<section class="nutri-dalt">' +
-            '<div class="fitxa">' +
-              '<div class="xifra-gran">' + eurNum(d.total) + '<span class="u">€</span></div>' +
-              '<p class="verdicte">Suma dels últims valors coneguts de cada actiu.</p>' +
-            '</div>' +
-            '<button class="btn btn-secundari" data-nou-actiu style="width:100%">' +
-              ic('mes') + 'Afegeix un actiu</button>' +
+        '<div class="pagina">' +
+          '<section class="balanc">' +
+            '<p class="gravat">Total</p>' +
+            '<p class="balanc-v"><span class="n num">' + eurNum(d.total) + '</span><span class="u">€</span></p>' +
+            '<p class="balanc-frase menut">Suma dels últims valors coneguts de cada actiu.</p>' +
           '</section>' +
+          '<button class="btn btn-secundari btn-ple accio-gran" data-nou-actiu>' +
+            ic('mes') + 'Afegeix un actiu</button>' +
 
-          '<section class="nutri-apats">' +
+          '<section class="seccio">' +
+            '<div class="seccio-cap"><h2>Actius</h2><span class="menut">de quan és cada valor</span></div>' +
             (actius.length
-              ? '<div class="cats">' + actius.map(function (a) {
+              ? actius.map(function (a) {
                   var vell = a.dies === null || a.dies >= 30;
-                  return '<button class="act-fila" data-actiu="' + esc(a.id) + '"' +
+                  return '<button class="fila act-fila" data-actiu="' + esc(a.id) + '"' +
                     ' data-nom="' + esc(a.nom) + '" data-auto="' + (a.automatic ? '1' : '0') + '">' +
-                    '<span class="rec-cos">' +
+                    '<span>' +
                       '<b>' + esc(a.nom) + '</b>' +
                       '<span class="menut"' + (vell ? ' data-vell="1"' : '') + '>' +
                         (a.automatic ? 'del banc · ' : '') +
@@ -456,12 +601,12 @@ App.registraVista('finances', {
                           : 'fa ' + a.dies + (a.dies === 1 ? ' dia' : ' dies')) +
                       '</span>' +
                     '</span>' +
-                    (a.historic.length > 1 ? espurna(a.historic) : '') +
-                    '<span class="rec-import num">' +
+                    (a.historic.length > 1 ? espurna(a.historic) : '<span aria-hidden="true"></span>') +
+                    '<span class="import num">' +
                       (a.valor === null ? '—' : eur(a.valor)) + '</span>' +
                   '</button>';
-                }).join('') + '</div>'
-              : '<p class="menut">Encara no hi tens res. El compte del banc hi apareixerà sol ' +
+                }).join('')
+              : '<p class="menut seccio-nota">Encara no hi tens res. El compte del banc hi apareixerà sol ' +
                 'quan sincronitzi.</p>') +
           '</section>' +
         '</div>';
@@ -499,11 +644,11 @@ App.registraVista('finances', {
         '<div class="form-ajustos form-apunt">' +
           (editant
             ? '<label><span class="marge">Quant val ara</span>' +
-                '<input data-valor inputmode="decimal" class="num camp-import" placeholder="0,00" value="' +
+                '<input data-valor data-primer inputmode="decimal" class="num camp-import" placeholder="0,00" value="' +
                   (a.valor === null ? '' : String(a.valor).replace('.', ',')) + '" autocomplete="off"></label>' +
               '<button class="btn btn-primari" data-anota>Anota el valor d\'avui</button>' +
               (auto
-                ? '<p class="menut" style="margin-top:var(--e3)">Aquest el porta el banc i ' +
+                ? '<p class="menut">Aquest el porta el banc i ' +
                   's\'actualitza sol cada matinada. Pots canviar-li el nom, però no el treguis: ' +
                   'el banc en crearia un de nou al costat.</p>'
                 : '') +
@@ -517,7 +662,7 @@ App.registraVista('finances', {
               (editant ? esc(a.tipus || '') : '') + '"></label>' +
           '<button class="btn btn-secundari" data-desa-actiu>' + (editant ? 'Desa el nom' : 'Crea') + '</button>' +
           (editant && !auto
-            ? '<button class="btn btn-secundari" data-treu-actiu style="margin-top:var(--e2)">Treu-lo</button>' : '') +
+            ? '<button class="btn btn-secundari" data-treu-actiu>Arxiva\'l</button>' : '') +
         '</div>');
 
       var ba = cos.querySelector('[data-anota]');
@@ -579,29 +724,30 @@ App.registraVista('finances', {
       (v.perRecurrent || []).forEach(function (x) { estats[x.id] = x; });
 
       arrel.innerHTML = capcalera(false) +
-        '<div class="pagina nutri">' +
+        '<div class="pagina">' +
           /* EL TERRA DEL MES, i és la xifra que abans no sortia enlloc.
              «He gastat 780 €» i «tinc 862 € compromesos passi el que passi»
              són dues coses molt diferents, i la segona és la que et diu quant
              et queda de debò per decidir. */
-          '<section class="nutri-dalt">' +
-            '<div class="tres-xifres">' +
-              xifra('Compromès', eurNum(v.compromes), '€') +
-              xifra('Entren', eurNum(v.esperat), '€') +
-              xifra('Actius', llista.filter(function (r) { return r.actiu; }).length, '') +
-            '</div>' +
-            '<p class="menut">El que surt cada mes sense fer-hi res. Els porta el banc; ' +
-              'aquí el que es fa és vigilar que arribin i que no pugin de preu.</p>' +
-            '<button class="btn btn-primari" data-tria-rec style="width:100%;margin-top:var(--e3)">' +
-              ic('mes') + 'Afegeix-ne un</button>' +
-          '</section>' +
+          '<div class="xifres">' +
+            xifra('Compromès', eurNum(v.compromes), '€') +
+            xifra('Entren', eurNum(v.esperat), '€') +
+            xifra('Actius', llista.filter(function (r) { return r.actiu; }).length, '') +
+          '</div>' +
+          '<p class="menut seccio-nota">El que surt cada mes sense fer-hi res. Els porta el banc; ' +
+            'aquí el que es fa és vigilar que arribin i que no pugin de preu.</p>' +
 
           alarmes(v) +
+
+          '<button class="btn btn-primari btn-ple accio-gran" data-tria-rec>' +
+            ic('mes') + 'Afegeix-ne un</button>' +
+
           propostes(d) +
 
-          '<section class="nutri-apats">' +
+          '<section class="seccio">' +
+            '<div class="seccio-cap"><h2>Els rebuts fixos</h2><span class="menut">dia del mes</span></div>' +
             (llista.length
-              ? '<div class="cats">' + llista.map(function (r) {
+              ? llista.map(function (r) {
                   /* L'ESTAT D'AQUEST MES, dit amb paraules i no amb un color.
                      «Pendent» volia dir «encara no l'he escrit jo», que amb el
                      banc connectat no vol dir res. Ara diu si ha arribat, si
@@ -612,25 +758,23 @@ App.registraVista('finances', {
                           : e.estat === 'canviat' ? 'ha arribat, però per ' + eurNum(e.import) + ' €'
                           : e.estat === 'falta' ? 'no ha arribat'
                           : 'encara no toca';
-                  return '<button class="rec-fila" data-rec="' + esc(r.id) + '"' +
+                  return '<button class="fila rec-fila" data-rec="' + esc(r.id) + '"' +
                     (r.actiu ? '' : ' data-apagat="1"') +
                     ' data-estat="' + esc(e.estat) + '">' +
-                    '<span class="rec-dia">' + r.dia + '</span>' +
-                    '<span class="rec-cos">' +
+                    '<span class="rec-dia">Dia<b>' + r.dia + '</b></span>' +
+                    '<span>' +
                       '<b>' + esc(r.descripcio) + '</b>' +
                       '<span class="menut">' + esc((r.emoji ? r.emoji + ' ' : '') + r.categoriaNom) +
-                        ' · ' + esc(diu) +
+                        ' · <span class="estat-rec">' + esc(diu) + '</span>' +
                       '</span>' +
                     '</span>' +
-                    '<span class="rec-import num" data-costat="' +
-                      (r.tipus === 'i' ? 'deficit' : '') + '">' +
+                    '<span class="import num"' + (r.tipus === 'i' ? ' data-entra' : '') + '>' +
                       (r.tipus === 'i' ? '+' : '−') + eur(r.import) + '</span>' +
                   '</button>';
-                }).join('') + '</div>'
-              : '<p class="menut">Encara no en tens cap.</p>') +
+                }).join('')
+              : '<p class="menut seccio-nota">Encara no en tens cap.</p>') +
           '</section>' +
         '</div>';
-
       lligaCapcalera();
       arrel.querySelector('[data-tria-rec]').addEventListener('click', function () {
         obreTriador(d.triables || []);
@@ -702,8 +846,7 @@ App.registraVista('finances', {
       var falten = v.falten || [], canviats = v.canviats || [];
       if (!falten.length && !canviats.length) return '';
 
-      return '<section class="nutri-apats">' +
-        '<div class="vigila">' +
+      return '<section class="vigila" aria-label="El que cal mirar">' +
           falten.map(function (f) {
             return '<div class="vigila-fila" data-mena="falta">' + ic('avis') +
               '<span><b>' + esc(f.descripcio) + (f.tipus === 'i' ? ' no ha entrat' : ' no ha arribat') +
@@ -722,7 +865,6 @@ App.registraVista('finances', {
                 '" data-nou="' + c.ara + '">Posa-hi ' + eurNum(c.ara) + '</button>' +
             '</div>';
           }).join('') +
-        '</div>' +
       '</section>';
     }
 
@@ -747,12 +889,12 @@ App.registraVista('finances', {
     function propostes(d) {
       var p = d.propostes || [];
       if (!p.length) return '';
-      return '<section class="nutri-apats">' +
-        '<p class="marge" style="margin:0 0 var(--e2)">Ho he vist als teus moviments</p>' +
-        '<div class="cats">' + p.map(function (g) {
+      return '<section class="seccio">' +
+        '<div class="seccio-cap"><h2>Ho he vist als teus moviments</h2></div>' +
+        p.map(function (g) {
           return '<div class="prop-fila">' +
-            '<button class="prop-cos" data-prop="' + esc(g.clau) + '">' +
-              '<span class="prop-nom">' +
+            '<button class="fila" data-prop="' + esc(g.clau) + '">' +
+              '<span>' +
                 '<b>' + esc(g.descripcio) + '</b>' +
                 '<span class="menut">' + esc(g.mesos + ' de ' + g.mesosMirats + ' mesos · ' +
                   (g.variable ? 'de ' + eurNum(g.minim) + ' a ' + eurNum(g.maxim) + ' €, va variant'
@@ -760,15 +902,14 @@ App.registraVista('finances', {
                    : eurNum(g.minim) + '–' + eurNum(g.maxim) + ' €') +
                   ' · dia ' + g.dia) + '</span>' +
               '</span>' +
-              '<span class="rec-import num" data-costat="' +
-                (g.tipus === 'i' ? 'deficit' : '') + '">' +
+              '<span class="import num"' + (g.tipus === 'i' ? ' data-entra' : '') + '>' +
                 (g.tipus === 'i' ? '+' : '−') + eur(g.import) + '</span>' +
             '</button>' +
             '<button class="prop-no" data-fora="' + esc(g.clau) + '" ' +
               'aria-label="No proposis més ' + esc(g.descripcio) + '">' + ic('tancar') + '</button>' +
           '</div>';
-        }).join('') + '</div>' +
-        '<p class="menut" style="margin-top:var(--e2)">Toca\'n un per confirmar-lo. La creu vol ' +
+        }).join('') +
+        '<p class="menut seccio-nota">Toca\'n un per confirmar-lo. La creu vol ' +
           'dir que no, i llavors no te\'l torno a proposar.</p>' +
       '</section>';
     }
@@ -784,22 +925,21 @@ App.registraVista('finances', {
           (tots.length
             ? '<p class="menut">Dels teus moviments dels últims mesos. Toca el que sigui un ' +
                 'rebut fix i t\'ompliré el formulari.</p>' +
-              '<div class="cats tria-mov">' + tots.map(function (g) {
-                return '<button class="rec-fila" data-tria="' + esc(g.clau) + '">' +
-                  '<span class="rec-cos">' +
+              '<div class="tria-mov">' + tots.map(function (g) {
+                return '<button class="fila" data-tria="' + esc(g.clau) + '">' +
+                  '<span>' +
                     '<b>' + esc(g.descripcio) + '</b>' +
                     '<span class="menut">' + esc(g.mesos + ' de ' + g.mesosMirats + ' mesos · ' +
                       (g.minim === g.maxim ? 'sempre ' + eurNum(g.import)
                                            : 'de ' + eurNum(g.minim) + ' a ' + eurNum(g.maxim)) + ' €') +
                     '</span>' +
                   '</span>' +
-                  '<span class="rec-import num" data-costat="' +
-                    (g.tipus === 'i' ? 'deficit' : '') + '">' +
+                  '<span class="import num"' + (g.tipus === 'i' ? ' data-entra' : '') + '>' +
                     (g.tipus === 'i' ? '+' : '−') + eur(g.import) + '</span>' +
                 '</button>';
               }).join('') + '</div>'
             : '<p class="menut">Encara no hi ha prou moviments per triar-ne cap.</p>') +
-          '<button class="btn btn-secundari" data-a-ma style="width:100%;margin-top:var(--e3)">' +
+          '<button class="btn btn-secundari btn-ple" data-a-ma>' +
             'Escriu-lo a mà</button>' +
         '</div>');
 
@@ -835,7 +975,7 @@ App.registraVista('finances', {
             '<button data-tipus="i"' + (tipus === 'i' ? ' aria-pressed="true"' : '') + '>Entra</button>' +
           '</div>' +
           '<label><span class="marge">Import</span>' +
-            '<input data-c="import" inputmode="decimal" class="num camp-import" placeholder="0,00" value="' +
+            '<input data-c="import" data-primer inputmode="decimal" class="num camp-import" placeholder="0,00" value="' +
               (r ? String(r.import).replace('.', ',') : '') + '" autocomplete="off"></label>' +
           '<label><span class="marge">Què és</span>' +
             '<input data-c="descripcio" autocomplete="off" placeholder="p. ex. Lloguer" value="' +
@@ -857,7 +997,7 @@ App.registraVista('finances', {
             ? '<label class="cat-exclou"><input type="checkbox" data-c="actiu"' +
               (r.actiu ? ' checked' : '') + '><span>Actiu</span></label>' : '') +
           '<button class="btn btn-primari" data-desa-rec>' + (editant ? 'Desa' : 'Crea') + '</button>' +
-          (editant ? '<button class="btn btn-secundari" data-treu-rec style="margin-top:var(--e2)">Treu-lo</button>' : '') +
+          (editant ? '<button class="btn btn-secundari" data-treu-rec>Arxiva\'l</button>' : '') +
         '</div>');
 
       var camps = {};
@@ -962,21 +1102,20 @@ App.registraVista('finances', {
       }
 
       arrel.innerHTML = capcalera(false) +
-        '<div class="pagina nutri">' +
-          '<section class="nutri-dalt">' +
-            '<div class="tres-xifres">' +
+        '<div class="pagina">' +
+            '<div class="xifres">' +
               xifra('Comerços', d.comercos.length, '') +
               xifra('Solts', d.solts.length, '') +
               xifra('Moviments', d.totalMoviments, '') +
             '</div>' +
-            '<p class="menut">Cada comerç és una sola decisió: es queda apresa i ' +
+            '<p class="menut seccio-nota">Cada comerç és una sola decisió: es queda apresa i ' +
               'no te\'n tornaré a preguntar mai més.</p>' +
-          '</section>' +
 
-          '<section class="nutri-apats">' +
+          '<section class="seccio">' +
+            '<div class="seccio-cap"><h2>Comerços</h2>' +
+              '<span class="menut">' + d.comercos.length + ' per decidir</span></div>' +
             (d.comercos.length
-              ? '<p class="marge">Comerços</p>' +
-                '<div class="revisar">' +
+              ? '<div class="revisar">' +
                   d.comercos.map(function (g) {
                     return '<div class="rev-fila" data-clau="' + esc(g.clau) + '">' +
                       '<div class="rev-cap">' +
@@ -990,11 +1129,13 @@ App.registraVista('finances', {
                     '</div>';
                   }).join('') +
                 '</div>'
-              : '<p class="menut">Cap comerç pendent. Ben fet.</p>') +
+              : '<p class="menut seccio-nota">Cap comerç pendent.</p>') +
+          '</section>' +
 
             (d.solts.length
-              ? '<p class="marge" style="margin-top:var(--e5)">D\'un en un</p>' +
-                '<p class="menut">Aquests no porten el nom del comerç: el banc hi ha ' +
+              ? '<section class="seccio">' +
+                '<div class="seccio-cap"><h2>D\'un en un</h2></div>' +
+                '<p class="menut seccio-nota">Aquests no porten el nom del comerç: el banc hi ha ' +
                   'posat una etiqueta genèrica. Cada un és una compra diferent, i per ' +
                   'això no s\'aprenen mai.</p>' +
                 '<div class="revisar">' +
@@ -1009,9 +1150,9 @@ App.registraVista('finances', {
                       triador(m.tipus, 'data-tria-mov', m.descripcio) +
                     '</div>';
                   }).join('') +
-                '</div>'
+                '</div>' +
+              '</section>'
               : '') +
-          '</section>' +
         '</div>';
 
       lligaCapcalera();
@@ -1066,9 +1207,6 @@ App.registraVista('finances', {
     // -------------------------------------------------------------- accions
 
     function lligaCapcalera() {
-      var bv = arrel.querySelector('[data-torna]');
-      if (bv) bv.addEventListener('click', function () { App.ves('inici'); });
-
       arrel.querySelectorAll('[data-salt]').forEach(function (b) {
         b.addEventListener('click', function () {
           var nou = mouMes(mes, Number(b.dataset.salt));
@@ -1099,7 +1237,7 @@ App.registraVista('finances', {
      * diners, ensenyar el resultat abans de tocar-les no és una cortesia.
      */
     function obreAjustos() {
-      var cos = App.modal('Finances',
+      var cos = App.modal('Categories i importació',
         '<div class="form-ajustos">' +
           '<p class="marge">Categories</p>' +
           '<div id="fin-cats" class="cats-gest"></div>' +
@@ -1214,14 +1352,14 @@ App.registraVista('finances', {
 
         var lector = new FileReader();
         lector.onerror = function () {
-          sortida.innerHTML = '<p class="menut" style="color:var(--avis)">No he pogut llegir el fitxer.</p>';
+          sortida.innerHTML = '<p class="menut avis-text">No he pogut llegir el fitxer.</p>';
         };
         lector.onload = function () {
           var text = String(lector.result || '');
           crida('finances', 'importa', { dades: text, simulacio: true })
             .then(function (r) { mostraAssaig(r, text); })
             .catch(function (err) {
-              sortida.innerHTML = '<p class="menut" style="color:var(--avis)">' + esc(err.message) + '</p>';
+              sortida.innerHTML = '<p class="menut avis-text">' + esc(err.message) + '</p>';
             });
         };
         lector.readAsText(f);
@@ -1230,7 +1368,7 @@ App.registraVista('finances', {
       function mostraAssaig(r, text) {
         var res = r.moviments + r.categories + r.recurrents + r.pressupostos + r.actius + r.valorsPatrimoni;
         sortida.innerHTML =
-          '<div class="fitxa" style="margin-top:var(--e3)">' +
+          '<div class="importacio">' +
             '<p class="marge">Què hi he trobat</p>' +
             /* Si el fitxer no és el que esperàvem, els comptadors no hi són i
                sortia «undefined moviments · undefined categories». Zero és una
@@ -1247,9 +1385,9 @@ App.registraVista('finances', {
               ? '<p class="menut">' + r.senseCategoria + ' moviments venen sense categoria clara. ' +
                 'Entren igual i els podràs canviar des d\'aquí.</p>' : '') +
             (r.avisos && r.avisos.length
-              ? '<p class="menut" style="color:var(--avis)">' + r.avisos.map(esc).join('<br>') + '</p>' : '') +
+              ? '<p class="menut avis-text">' + r.avisos.map(esc).join('<br>') + '</p>' : '') +
             (res > 0
-              ? '<button class="btn btn-primari" data-confirma style="width:100%;margin-top:var(--e3)">' +
+              ? '<button class="btn btn-primari btn-ple" data-confirma>' +
                   'Importa-ho</button>'
               : '<p class="menut">No hi ha res de nou per importar.</p>') +
           '</div>';
@@ -1310,7 +1448,7 @@ App.registraVista('finances', {
           '</div>' +
 
           '<label><span class="marge">Import</span>' +
-            '<input data-c="import" inputmode="decimal" class="num camp-import" placeholder="0,00" value="' +
+            '<input data-c="import" data-primer inputmode="decimal" class="num camp-import" placeholder="0,00" value="' +
               (editant ? String(m.import).replace('.', ',') : '') + '" autocomplete="off"></label>' +
 
           '<label><span class="marge">Què era</span>' +
@@ -1334,7 +1472,7 @@ App.registraVista('finances', {
               (editant ? esc(m.data) : fmt.avui()) + '" autocomplete="off"></label>' +
 
           '<button class="btn btn-primari" data-desa>' + (editant ? 'Desa' : 'Apunta') + '</button>' +
-          (editant ? '<button class="btn btn-secundari" data-treu style="margin-top:var(--e2)">Treu-lo</button>' : '') +
+          (editant ? '<button class="btn btn-secundari" data-treu>Treu-lo</button>' : '') +
         '</div>');
 
       var tipus = editant ? m.tipus : 'd';

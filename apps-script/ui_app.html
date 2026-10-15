@@ -393,7 +393,7 @@ var Jefe = (function () {
     },
 
     buit: function (titol, text, botoHtml) {
-      return '<div class="estat">' + ic('habits', 'ic-g') +
+      return '<div class="estat">' + ic('finances', 'ic-g') +
              '<h2>' + esc(titol) + '</h2>' +
              '<p>' + esc(text) + '</p>' + (botoHtml || '') + '</div>';
     },
@@ -433,7 +433,7 @@ var Jefe = (function () {
                 de l'error i CAP botó. Comprovat amb Hàbits. El comentari de
                 més amunt ja explica que això va ser un cul-de-sac una vegada;
                 ho era encara per al cas general. */
-             '<button class="btn btn-fantasma" data-va-inici="1">Ves al full índex</button>' +
+             '<button class="btn btn-fantasma" data-va-inici="1">Torna al mes</button>' +
              '</div>';
     },
 
@@ -447,6 +447,11 @@ var Jefe = (function () {
 
   // --------------------------------------------------------------- aplicació
 
+  /* LA PANTALLA D'ARRENCADA. A JEFE era el full índex, amb un botó per
+     apartat; aquí només n'hi ha un, i l'índex seria un pas de més cada cop
+     que obres l'app. S'obre directament al mes, com Nutrició. */
+  var INICI = 'finances';
+
   var App = {
     vistes: {},
     actual: null,
@@ -458,14 +463,9 @@ var Jefe = (function () {
     arrenca: function (estatInicial) {
       App.moduls = (estatInicial && estatInicial.moduls) || Cau.get('moduls', []);
       App.pintaNav();
-      /* Fosc sempre, no «segons el que digui el sistema». Amb «auto», el
-         mateix JEFE sortia blanc al mòbil i fosc al PC segons com tingués
-         cadascun la configuració, i això no és una app: són dues. La sala de
-         comandament ja és fosca; la resta l'ha d'acompanyar.
-
-         I ara ja no es tria: el botó de passar a full de dia s'ha tret. El que
-         hi hagi desat als aparells d'abans —«auto», «clar»— es migra aquí i
-         no torna a preguntar-se. */
+      /* UN SOL FULL, EL CLAR. Amb «segons el sistema», la mateixa app sortia
+         d'un color al mòbil i d'un altre a l'ordinador, i això no és una app:
+         són dues. Finances és el camp pàl·lid de la seva icona. */
       App.aplicaTema();
 
       /* LA MARCA DE VERSIÓ. La construcció hi deixa la data i, si el codi
@@ -490,8 +490,8 @@ var Jefe = (function () {
          Registrar-los no costa res ni depèn de tenir servidor. El que depèn
          del servidor és què s'ensenya, i això va més avall. */
       window.addEventListener('popstate', function (ev) {
-        var id = (ev.state && ev.state.vista) || 'inici';
-        App.ves(App.vistes[id] ? id : 'inici', null, true);
+        var id = (ev.state && ev.state.vista) || INICI;
+        App.ves(App.vistes[id] ? id : INICI, null, true);
       });
       document.addEventListener('visibilitychange', function () {
         if (!document.hidden) Cua.envia();
@@ -501,7 +501,7 @@ var Jefe = (function () {
 
       // Encara sense clau —o sense adreça, si se serveix de fora—: connectar.
       if (!Servidor.llest()) {
-        App.ves('inici');
+        App.ves(INICI);
         setTimeout(function () { App.connecta(); }, 300);
         return;
       }
@@ -526,7 +526,7 @@ var Jefe = (function () {
         try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
         App.ves(d.vista, d.params);
       } else {
-        App.ves('inici');
+        App.ves(INICI);
       }
 
       /* TOCAR UNA NOTIFICACIÓ AMB L'APP JA OBERTA.
@@ -607,7 +607,7 @@ var Jefe = (function () {
 
     ves: function (id, params, sensePila) {
       var def = App.vistes[id];
-      if (!def) { id = 'inici'; def = App.vistes.inici; }
+      if (!def) { id = INICI; def = App.vistes[INICI]; }
 
       // El botó d'enrere del mòbil ha de funcionar: és el primer que prems quan
       // vols sortir d'algun lloc. Només apilem els canvis de vista, no els de
@@ -775,7 +775,10 @@ var Jefe = (function () {
       fosc.querySelector('[data-tanca]').addEventListener('click', App.tancaModal);
       fosc.addEventListener('click', function (ev) { if (ev.target === fosc) App.tancaModal(); });
 
-      var primer = fosc.querySelector('input, select, textarea, button:not([data-tanca])');
+      /* EL CAMP QUE TOCA, SI LA PANTALLA EL DIU. Apuntar un moviment comença
+         per l'import, que és l'únic que sempre has d'escriure. */
+      var primer = fosc.querySelector('[data-primer]') ||
+                   fosc.querySelector('input, select, textarea, button:not([data-tanca])');
       if (primer && primer.type !== 'button') setTimeout(function () { primer.focus(); }, 320);
       return fosc.querySelector('.modal');
     },
@@ -968,21 +971,16 @@ var Jefe = (function () {
     },
 
     /**
-     * FOSC I PROU.
-     *
-     * Hi havia un botó per passar a full de dia i en Pol l'ha tret: el vol
-     * fosc sempre. La funció es queda perquè és qui posa l'atribut en
-     * arrencar, però ja no pregunta res a ningú.
-     *
-     * El full clar segueix definit a l'estil i no s'esborra: és el que fa que
-     * el fosc estigui escrit com una tria i no com l'única cosa que hi ha.
+     * CLAR I PROU. La funció es queda perquè és qui posa l'atribut en
+     * arrencar; ja no pregunta res a ningú. El que hi hagués desat d'abans
+     * —«fosc», d'un aparell que venia de JEFE— es migra aquí.
      */
     aplicaTema: function () {
-      Cau.set('tema', 'fosc');
-      document.documentElement.setAttribute('data-tema', 'fosc');
+      Cau.set('tema', 'clar');
+      document.documentElement.setAttribute('data-tema', 'clar');
     },
 
-    temaActual: function () { return 'fosc'; }
+    temaActual: function () { return 'clar'; }
   };
 
   /* LES DUES SORTIDES D'UNA PANTALLA D'ERROR, ESCOLTADES UN SOL COP.
@@ -994,7 +992,7 @@ var Jefe = (function () {
     var connecta = ev.target.closest && ev.target.closest('[data-connecta-ara]');
     if (connecta) { App.connecta(); return; }
     var inici = ev.target.closest && ev.target.closest('[data-va-inici]');
-    if (inici) { App.ves('inici'); return; }
+    if (inici) { App.ves(INICI, {}); return; }
 
     /* I «TORNA-HO A PROVAR» TAMBÉ, PEL MATEIX MOTIU.
        Cada vista se'l cusia pel seu compte i quatre se'l van deixar: el

@@ -1,34 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="JEFE">
-  <title>JEFE</title>
-  <!--
-    Favicon: la mateixa marca, despullada.
-    A 16 px no hi caben ni anells, ni marques, ni retícula: només el camp
-    fosc, la silueta i el punt. Fer servir la icona completa aquí donaria
-    una taca blava. Les proporcions són les mateixes que icona.svg perquè
-    es reconeguin com el mateix objecte.
-  -->
-  <defs>
-    <radialGradient id="f-cel" cx="50%" cy="36%" r="72%">
-      <stop offset="0%" stop-color="#173f5e"/>
-      <stop offset="100%" stop-color="#04070b"/>
-    </radialGradient>
-    <linearGradient id="f-sol" x1="0" y1="1" x2=".3" y2="0">
-      <stop offset="0%" stop-color="#2b7fd4"/>
-      <stop offset="100%" stop-color="#9fefFa"/>
-    </linearGradient>
-  </defs>
-
-  <rect width="64" height="64" rx="14" fill="url(#f-cel)"/>
-
-  <!-- Vessant d'ombra i vessant de sol: el contrast és el que fa llegible -->
-  <path d="M32 15 L55 51 L9 51 Z" fill="#08243c"/>
-  <path d="M32 15 L55 51 L32 51 Z" fill="url(#f-sol)"/>
-  <path d="M32 15 L55 51" fill="none" stroke="#cbf7ff" stroke-width="1.6"/>
-
-  <!-- Horitzó -->
-  <path d="M6 51h52" stroke="#4fd6e0" stroke-width="2.4" stroke-linecap="round" opacity=".9"/>
-
-  <!-- El punt -->
-  <circle cx="32" cy="15" r="12" fill="#4fd6e0" opacity=".28"/>
-  <circle cx="32" cy="15" r="6.4" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Finances">
+  <title>Finances</title>
+  <!-- La mateixa marca, despullada: a 16 px no hi caben les carenes de
+       darrere. Queda la d'ara, fosca, la fossa en ocre i el nivell. -->
+  <rect width="64" height="64" fill="#e8eef0"/>
+  <g fill="none" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M7 34 L18 21 L24.5 25 L32 11 L40 22 L45.5 18.5 L57 34" stroke="#054a57" stroke-width="4.4"/>
+    <path d="M15 34 L22.5 43.5 L29.5 40.5 L36.5 50 L43 45 L49 34" stroke="#85580f" stroke-width="4"/>
+  </g>
+  <path d="M4 34h56" stroke="#0d191e" stroke-width="3.6"/>
 </svg>

@@ -2179,7 +2179,7 @@ console.log('\nNotificacions: totes han de portar a una pantalla que existeixi')
     const m = t.match(/App\.registraVista\(\s*'([a-z0-9_]+)'/g) || [];
     m.forEach((x) => vistes.add(x.match(/'([a-z0-9_]+)'/)[1]));
   });
-  cal('es troben les pantalles registrades', ['inici', 'finances'].every((v) => vistes.has(v)), [...vistes].join(', '));
+  cal('es troben les pantalles registrades', vistes.has('finances') && !vistes.has('inici'), [...vistes].join(', '));
 
   /* Cada `url:` que surti al costat d'un `Notifica.envia`. */
   const destins = [];
@@ -2615,21 +2615,23 @@ console.log('\nEl visor: qualsevol eina pot ensenyar el que ha trobat');
    que si un dia es desfan no fallaria res a la vista: l'app s'instal·laria
    com si fos JEFE, trepitjaria la memòria de les altres apps, heretaria la
    pàgina de l'app vella de finances o connectaria el banc a un altre lloc. */
-console.log('\nFinances: viu a /finances/, porta el seu nom i troba les coses de JEFE');
+console.log('\nFinances: viu a /financesapp/, porta el seu nom i troba les coses de JEFE');
 {
   const manifest = JSON.parse(fs.readFileSync('manifest.webmanifest', 'utf8'));
-  cal("el manifest té l'id de finances, no el de JEFE", manifest.id === '/finances/', manifest.id);
+  cal("el manifest té l'id de finances, no el de JEFE", manifest.id === '/financesapp/', manifest.id);
   cal('i les adreces relatives, que viatgen soles',
       manifest.start_url === './' && manifest.scope === './', manifest.start_url + ' · ' + manifest.scope);
 
   const sw = fs.readFileSync('sw.js', 'utf8');
-  cal('la memòria cau del navegador porta el prefix de finances', /var PREFIX = 'finances-';/.test(sw));
+  cal('la memòria cau del navegador porta el prefix de finances', /var PREFIX = 'financesapp-';/.test(sw));
   cal('i només esborra les seves, no les de Nutrició ni les del cos',
       /n\.indexOf\(PREFIX\) === 0 && n !== CAU/.test(sw));
-  /* A aquesta mateixa adreça hi va viure l'app de finances del juliol, i la
-     seva memòria cau es deia «finances-v1». Amb el mateix nom, aquesta app
-     n'heretaria la pàgina vella. */
-  cal("i no es diu com la de l'app vella del juliol", !/var CAU = PREFIX \+ 'v1';/.test(sw));
+  /* L'app de finances del juliol tenia, al mateix domini, la memòria cau
+     «finances-v1». Un prefix que la inclogués l'esborraria en activar-se, i
+     no és seva. */
+  const prefix = (sw.match(/var PREFIX = '([^']+)';/) || [, ''])[1];
+  cal("i el prefix no atrapa la de l'app vella del juliol",
+      prefix && !'finances-v1'.startsWith(prefix), prefix);
 
   const app = fs.readFileSync('apps-script/ui_app.html', 'utf8');
   cal('la memòria local també porta el prefix de finances', /var PREFIX_CAU = 'finances\.';/.test(app));
@@ -2688,6 +2690,82 @@ console.log('\nFinances: viu a /finances/, porta el seu nom i troba les coses de
 
   /* Les finances no fan servir la IA: res d'això s'ha de portar de JEFE. */
   cal("no es porten els ajustos de la IA de JEFE", !/portaAjustosDeJefe_\(/.test(inst));
+}
+
+// --------------------------------------------------------- s'obre al mes
+/* No hi ha full índex: l'app és una pantalla, com Nutrició. Si l'arrencada
+   anés a buscar «inici», que aquí no existeix, cauria a la pantalla per
+   defecte i des de fora no es notaria res fins que alguna cosa hi depengués. */
+console.log('\nL\'arrencada: directament al mes, sense índex');
+{
+  const app = fs.readFileSync('apps-script/ui_app.html', 'utf8');
+  cal('la pantalla d\'arrencada és Finances', /var INICI = 'finances';/.test(app));
+  cal('i ja no es va a buscar «inici» enlloc', !/App\.ves\('inici'/.test(app));
+
+  const idx = fs.readFileSync('apps-script/ui_index.html', 'utf8');
+  const inclosos = (idx.match(/include\('([^']+)'\)/g) || []).map((x) => x.slice(9, -2));
+  const falten = inclosos.filter((n) => !fs.existsSync('apps-script/' + n + '.html'));
+  cal('tot el que inclou la pàgina existeix', falten.length === 0, falten.join(', '));
+  cal('i la de Finances hi és', inclosos.indexOf('vista_finances') !== -1);
+
+  const vf = fs.readFileSync('apps-script/vista_finances.html', 'utf8');
+  cal('el botó de tornar a l\'índex ja no hi és', !/data-torna/.test(vf));
+  cal('i l\'avís d\'activar les notificacions viu a la pantalla del mes',
+      /Notificacions\.activa\(\)/.test(vf) && /cridaAvisos\(\)/.test(vf));
+}
+
+// ------------------------------------------- la paraula JEFE, fora de la vista
+/* En Pol no ha de veure «JEFE» a la pantalla. Els comentaris del codi poden
+   parlar d'on ve tot, i els missatges de l'editor el nomenen a posta —és d'on
+   es copien les dades—, però res del que surt a l'app ni a la icona
+   instal·lada. */
+console.log('\nCap «JEFE» a la pantalla');
+{
+  const treuComentaris = (s) => s
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/(^|[^:'"\\])\/\/.*$/gm, '$1');
+  const deixa = /MARCA_JEFE|VERSIO_JEFE|var Jefe = |Jefe\.\w+|jefe: 'ves'|m\.jefe !==|\/\^\\s\*jefe\\s\*\$\/i|id="ic-jefe"/;
+  const trobats = [];
+  fs.readdirSync('apps-script').filter((f) => /\.html$/.test(f)).forEach((f) => {
+    treuComentaris(fs.readFileSync('apps-script/' + f, 'utf8')).split('\n').forEach((l) => {
+      if (/jefe/i.test(l) && !deixa.test(l)) trobats.push(f + ': ' + l.trim().slice(0, 70));
+    });
+  });
+  cal('cap text de pantalla diu JEFE', trobats.length === 0, trobats.slice(0, 4).join(' · '));
+
+  const man = fs.readFileSync('manifest.webmanifest', 'utf8');
+  cal('ni el manifest', !/jefe/i.test(man));
+}
+
+// ----------------------------------------------- el tall del mes, de debò
+/* La peça pròpia d'aquesta app. Es dibuixa amb els moviments del mes i prou:
+   els traspassos no hi compten (tampoc al balanç), i sense moviments les dues
+   línies són planes. Es prova executant la funció de debò. */
+console.log('\nEl tall del mes: els moviments de debò, i res inventat');
+{
+  const vf = fs.readFileSync('apps-script/vista_finances.html', 'utf8');
+  const tros = vf.slice(vf.indexOf('    function tall(d, esActual) {'), vf.indexOf('    function xifra(etiqueta'));
+  const c = { String, Number, Math, Date, Array, cats: [{ id: 'c_tras', exclou: true }, { id: 'c_alim', exclou: false }],
+              esc: (s) => String(s), eur: (n) => String(n) };
+  vm.createContext(c);
+  vm.runInContext(tros + '\nvar __t = tall;', c);
+
+  const amb = c.__t({ mes: '2026-07', moviments: [
+    { data: '2026-07-01', tipus: 'i', import: 2000, categoria: 'i_nom' },
+    { data: '2026-07-03', tipus: 'd', import: 300, categoria: 'c_tras' },
+    { data: '2026-07-10', tipus: 'd', import: 500, categoria: 'c_alim' }
+  ] }, false);
+  cal('diu quant ha entrat i quant ha sortit, sense els traspassos',
+      /han entrat 2000 i han sortit 500/.test(amb), (amb.match(/aria-label="([^"]*)"/) || [])[1]);
+  cal('i té les dues línies', /class="entra" d="M/.test(amb) && /class="surt" d="M/.test(amb));
+
+  const buit = c.__t({ mes: '2026-07', moviments: [] }, false);
+  const linia = (svg, cls) => (svg.match(new RegExp('class="' + cls + '" d="([^"]*)"')) || [, ''])[1];
+  const ys = (d) => (d.match(/V(-?[\d.]+)/g) || []).map((v) => Number(v.slice(1)));
+  const plana = (d) => new Set(ys(d)).size <= 1;
+  cal('sense moviments, les dues línies són planes', plana(linia(buit, 'entra')) && plana(linia(buit, 'surt')),
+      linia(buit, 'entra').slice(0, 60));
 }
 
 console.log(falles ? '\n' + falles + ' falla(des).\n' : '\nTot correcte.\n');

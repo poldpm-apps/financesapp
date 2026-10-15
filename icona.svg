@@ -1,111 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="JEFE">
-  <title>JEFE</title>
-
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Finances">
+  <title>Finances</title>
   <!--
-    LA MARCA — un far al cim.
-
-    Fon les dues coses que són d'en Pol i de ningú més: el nucli de la sala de
-    comandament i el símbol de cim del full topogràfic. No és una esfera d'IA
-    genèrica: és un senyal encès en un cim, de nit.
-
-    LA REGLA QUE MANA SOBRE L'ESPECTACLE
-    Als 48 px d'una pantalla d'inici només sobreviuen tres coses: el camp fosc,
-    la silueta del cim i el punt de llum. Per això la muntanya ocupa el 70 %
-    de l'amplada i té els dos vessants amb valors ben separats. Tot el que hi
-    ha de més —anells, marques, retícula— és textura que apareix en gran i
-    s'esvaeix sense embrutar quan es redueix. La primera versió tenia tres
-    anells i vuit marques: en petit era una taca. Ara en té dos i quatre.
+    EL TALL D'UN MES. Un perfil de terreny amb el nivell del mar al mig: per
+    sobre, la serralada del que entra, amb els mesos d'abans darrere, més grans
+    i més clars, com les carenes de l'app del cos; per sota, en ocre, la fossa
+    del que surt. Com menys fonda la fossa, més et queda. La mateixa rampa de
+    turquesa, el mateix camp pàl·lid i la mateixa quadrícula que les germanes;
+    l'ocre és el de l'avís de l'app del cos. El fons va a sang: la forma del
+    retall la posa el mòbil.
   -->
-
-  <defs>
-    <radialGradient id="cel" cx="50%" cy="40%" r="70%">
-      <stop offset="0%"   stop-color="#14405f"/>
-      <stop offset="46%"  stop-color="#0a1c2e"/>
-      <stop offset="100%" stop-color="#04070b"/>
-    </radialGradient>
-
-    <radialGradient id="bafarada" cx="50%" cy="50%" r="50%">
-      <stop offset="0%"   stop-color="#ffffff" stop-opacity=".95"/>
-      <stop offset="16%"  stop-color="#b6f5fc" stop-opacity=".8"/>
-      <stop offset="42%"  stop-color="#4fd6e0" stop-opacity=".34"/>
-      <stop offset="100%" stop-color="#2b7fd4" stop-opacity="0"/>
-    </radialGradient>
-
-    <linearGradient id="vessant" x1="0" y1="1" x2=".25" y2="0">
-      <stop offset="0%"   stop-color="#1d5f96"/>
-      <stop offset="55%"  stop-color="#3ba3dd"/>
-      <stop offset="100%" stop-color="#9fefFa"/>
-    </linearGradient>
-
-    <linearGradient id="ombra" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0%"   stop-color="#050d16"/>
-      <stop offset="100%" stop-color="#0f3e63"/>
-    </linearGradient>
-
-    <linearGradient id="feix" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0%"   stop-color="#4fd6e0" stop-opacity=".5"/>
-      <stop offset="100%" stop-color="#4fd6e0" stop-opacity="0"/>
-    </linearGradient>
-
-    <clipPath id="retall"><rect width="512" height="512" rx="114"/></clipPath>
-  </defs>
-
-  <g clip-path="url(#retall)">
-
-    <rect width="512" height="512" fill="url(#cel)"/>
-
-    <!-- Retícula: gruixuda i molt tènue. En petit desapareix; en gran dona fons. -->
-    <g stroke="#3ba3dd" stroke-width="1.5" opacity=".10">
-      <path d="M0 128h512M0 256h512M0 384h512"/>
-      <path d="M128 0v512M256 0v512M384 0v512"/>
+  <rect width="512" height="512" fill="#e8eef0"/>
+  <g stroke="#086674" stroke-width="2" opacity=".14"><path d="M0 128h512M0 256h512M0 384h512M128 0v512M256 0v512M384 0v512"/></g>
+  <g transform="translate(0 28)">
+    <g fill="none" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M25.4 270 L124.6 143.5 L181.6 178.2 L256 54.2 L332.9 155.9 L387.4 123.7 L486.6 270" stroke="#bcced4" stroke-width="8"/>
+      <path d="M40.2 270 L133 151.7 L186.4 184.2 L256 68.2 L327.9 163.3 L379 133.1 L471.8 270" stroke="#7ab5c1" stroke-width="9"/>
+      <path d="M55.1 270 L141.5 159.8 L191.2 190.1 L256 82.1 L323 170.6 L370.5 142.6 L456.9 270" stroke="#1c8496" stroke-width="10"/>
+      <path d="M70 270 L150 168 L196 196 L256 96 L318 178 L362 152 L442 270" stroke="#054a57" stroke-width="18"/>
+      <path d="M112.6 270 L175.4 348.4 L233.6 323.8 L294.1 384.2 L350.1 343.9 L399.4 270" stroke="#d9b98a" stroke-width="9"/>
+      <path d="M128 270 L184 340 L236 318 L290 372 L340 336 L384 270" stroke="#85580f" stroke-width="16"/>
     </g>
-
-    <!-- Dos anells, no tres. Bàsics i gruixuts. -->
-    <g fill="none" stroke-linecap="round">
-      <circle cx="256" cy="216" r="204" stroke="#2b7fd4" stroke-width="2.5"
-              stroke-dasharray="150 60 84 40 180 46" opacity=".42"/>
-      <circle cx="256" cy="216" r="172" stroke="#4fd6e0" stroke-width="4"
-              stroke-dasharray="236 88 118 62" opacity=".8"/>
-    </g>
-
-    <!-- Quatre marques cardinals, ben gruixudes -->
-    <g stroke="#4fd6e0" stroke-width="7" stroke-linecap="round" opacity=".95">
-      <path d="M256 6v38"/><path d="M256 388v38"/>
-      <path d="M22 216h38"/><path d="M452 216h38"/>
-    </g>
-
-    <!-- Raigs. Només es veuen en gran; en petit es fonen amb la lluïssor. -->
-    <g fill="url(#feix)" opacity=".85">
-      <path d="M243 176 L256 -30 L269 176 Z"/>
-      <path d="M214 186 L176 -6  L246 178 Z" opacity=".45"/>
-      <path d="M298 186 L336 -6  L266 178 Z" opacity=".45"/>
-      <path d="M196 204 L72  74  L232 190 Z" opacity=".22"/>
-      <path d="M316 204 L440 74  L280 190 Z" opacity=".22"/>
-    </g>
-
-    <!-- LA MUNTANYA. 70 % de l'amplada: és el que ha de manar en petit. -->
-    <path d="M256 122 L436 396 L76 396 Z" fill="url(#ombra)"/>
-    <path d="M256 122 L436 396 L256 396 Z" fill="url(#vessant)"/>
-
-    <!-- Arestes: la de sol marcada, la d'ombra insinuada -->
-    <path d="M256 122 L436 396" fill="none" stroke="#cbf7ff" stroke-width="5"
-          stroke-linejoin="round" opacity=".9"/>
-    <path d="M256 122 L76 396" fill="none" stroke="#4fd6e0" stroke-width="3.5" opacity=".5"/>
-
-    <!-- Neu: prou avall per no menjar-se-la la lluïssor, i prou gran per veure's -->
-    <path d="M256 122 L316 213 L286 200 L262 224 L238 198 L206 212 Z"
-          fill="#eafcff" opacity=".95"/>
-
-    <!-- Horitzó: una sola línia, gruixuda -->
-    <path d="M52 396h408" stroke="#4fd6e0" stroke-width="7" stroke-linecap="round" opacity=".85"/>
-    <path d="M96 424h320" stroke="#2b7fd4" stroke-width="3" stroke-linecap="round" opacity=".3"/>
-
-    <!-- EL PUNT DE LLUM. El darrer que sobreviu quan tot es fa petit. -->
-    <circle cx="256" cy="122" r="96" fill="url(#bafarada)"/>
-    <circle cx="256" cy="122" r="23" fill="#ffffff"/>
-    <circle cx="256" cy="122" r="38" fill="none" stroke="#eafcff" stroke-width="3.5" opacity=".5"/>
+    <path d="M44 270H468" stroke="#0d191e" stroke-width="12"/>
   </g>
-
-  <rect x="1.5" y="1.5" width="509" height="509" rx="112.5"
-        fill="none" stroke="#4fd6e0" stroke-width="3" opacity=".26"/>
 </svg>

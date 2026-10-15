@@ -21,12 +21,12 @@
    cau del navegador és UNA per a tot el domini. Amb un nom genèric i esborrant
    «tot el que no sigui meu», cada app que s'actualitzés buidaria la de les
    altres. */
-var PREFIX = 'finances-';
-/* v2 I NO v1, A POSTA. A aquesta mateixa adreça hi va viure l'app de finances
-   del juliol, i la seva memòria cau es deia «finances-v1» i guardava el SEU
-   index.html. Amb el mateix nom, aquesta app hauria heretat aquella pàgina
-   vella com a xarxa de seguretat; amb un altre, en activar-se l'esborra. */
-var CAU = PREFIX + 'v2';
+/* «financesapp-» I NO «finances-». L'app de finances del juliol vivia a
+   /finances/ del mateix domini i la seva memòria cau es deia «finances-v1».
+   Amb un prefix que la inclogués, en activar-se aquesta l'esborraria, i no és
+   seva. Amb aquest, cadascuna només toca la que és seva. */
+var PREFIX = 'financesapp-';
+var CAU = PREFIX + 'v1';
 var ESSENCIALS = [
   './',
   './index.html',

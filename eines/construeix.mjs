@@ -89,6 +89,7 @@ html = html.replace(/<\?!=\s*JSON\.stringify\(estat\)\s*\?>/g, 'null');
 //    servei tampoc, perquè la pàgina va dins d'un iframe d'un altre domini.
 const INSTALLACIO = `
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preload" href="fonts/hanken-grotesk.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-title" content="Finances">
   <script>

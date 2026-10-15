@@ -1,9 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
-  <!-- Simbologia de mapa, dibuixada a mà amb un sol gruix de traç.
-       Els símbols d'hàbit surten del repertori d'un full 1:25.000: cim, font,
-       refugi, fita, creu, cova, arbre, pont, gual, mina. A cada hàbit se li
-       assigna un símbol de manera estable a partir del seu identificador,
-       igual que una entrada de llegenda. -->
+  <!-- LES ICONES DE FINANCES. Totes de traç, amb un sol gruix, com les de
+       les germanes. La marca és el tall de la icona de l'app. Les que no fa
+       servir ningú es treuen amb `eines/sobrant.mjs`, una per una. -->
 
   <!-- Seguiment físic: el braç fent bola. Aquesta icona la vaig perdre en una
        neteja —esborrant els símbols de mapa vaig tallar per rang de línies i
@@ -71,12 +69,17 @@
     <path d="M18.4 2.8c1.5 2.7 1.5 7 0 9.7h-1.7V2.8z"/>
     <path d="M17.5 12.5V21.2"/>
   </symbol>
-  <!-- Finances: un perfil de terreny amb la línia de l'equilibri. El que
-       mires cada mes és si vas per sobre o per sota, no una moneda. -->
+  <!-- LA MARCA: el tall de la icona, dibuixat per ser petit. El nivell, la
+       serralada del que entra i la fossa del que surt, sense les carenes de
+       darrere, que a 24 px serien una taca. -->
   <symbol id="ic-finances" viewBox="0 0 24 24">
-    <path d="M3 20h18"/>
-    <path d="M3 14.5l4.5-4 3.5 3 4-6 5.5 5.5"/>
-    <path d="M3 17h18" stroke-dasharray="2 2.5"/>
+    <path d="M2.6 12.6h18.8"/>
+    <path d="M3.8 12.6 7.6 7.4l2 1.4L12 4l3 4.4 1.8-1.4 3.4 5.6"/>
+    <path d="M6.6 12.6l2.6 3.8 2.4-1.2 2.6 3.2 2.4-2.4 1.8-3.4"/>
+  </symbol>
+  <!-- Avall: el que obre la tria de què vols veure. -->
+  <symbol id="ic-avall" viewBox="0 0 24 24">
+    <path d="M6 9.5l6 6 6-6"/>
   </symbol>
   <!-- Estat buit: un anell obert. Era un mapa plegat, del mon d abans, i en
        una consola un mapa no vol dir res. Es l anell que surt a tot arreu
