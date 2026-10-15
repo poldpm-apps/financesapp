@@ -91,7 +91,7 @@ h1 { font-size: 30px; font-weight: 600; letter-spacing: -.015em; line-height: 1.
 h2 { font-size: 13px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
      line-height: 1.3; color: var(--tinta); }
 
-h1, .veredicte-v, .estat h2, .modal-cap h2 { text-wrap: balance; }
+h1, .estat h2, .modal-cap h2 { text-wrap: balance; }
 p, .menut { text-wrap: pretty; }
 
 /* EL GRAVAT: l'etiqueta de catàleg. 12 px i prou, en versaletes espaiades.
@@ -101,9 +101,8 @@ p, .menut { text-wrap: pretty; }
   color: var(--tinta-2); line-height: 1.35;
 }
 .gravat.tinta { color: var(--tinta); }
-.num-cat { color: var(--tinta); letter-spacing: .1em; }
+
 .menut { font-size: 14px; color: var(--tinta-2); line-height: 1.45; }
-.fluix { color: var(--tinta-2); }
 
 /* --------------------------------------------------------------- pàgina */
 #vista { min-height: 100dvh; }
@@ -118,7 +117,6 @@ p, .menut { text-wrap: pretty; }
   display: flex; justify-content: space-between; align-items: baseline; gap: var(--e3);
   padding-bottom: 10px; border-bottom: 1px solid var(--fil-fort);
 }
-.fila-regla { border-bottom: 1px solid var(--fil); }
 
 /* ------------------------------------------------------------ capçalera */
 .capcalera { max-width: var(--amplada); margin: 0 auto;
@@ -148,7 +146,7 @@ p, .menut { text-wrap: pretty; }
 .btn-icona .ic { width: 22px; height: 22px; }
 .btn-ple { width: 100%; }
 .btn-menut { min-height: 44px; padding: 0 var(--e3); font-size: 14px; }
-.btn-perill { background: var(--ocre); border-color: var(--ocre); color: #fff; }
+
 .btn:disabled, .btn[aria-disabled="true"] {
   border-color: var(--fil); color: var(--tinta-3); background: transparent; cursor: not-allowed;
 }
@@ -158,7 +156,7 @@ p, .menut { text-wrap: pretty; }
 @media (hover: hover) and (pointer: fine) {
   .btn:hover { background: var(--camp-alt); }
   .btn-primari:hover { background: #1f2f36; }
-  .btn-perill:hover { background: #6f490c; }
+
   .btn-fantasma:hover, .btn-icona:hover { background: rgba(13, 25, 30, .06); }
 }
 /* ESPERANT. El botó diu que l'ha sentit: una ratlla corre per sota mentre
@@ -181,7 +179,7 @@ p, .menut { text-wrap: pretty; }
 @media (hover: hover) and (pointer: fine) { .enllac:hover { text-decoration: underline; } }
 
 /* ----------------------------------------------------------- formularis */
-.formulari, .form-ajustos { display: grid; gap: 22px; }
+.form-ajustos { display: grid; gap: 22px; }
 .camp { display: grid; gap: var(--e2); }
 .camp > label, .camp > span, .camp > legend {
   font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
@@ -200,7 +198,7 @@ input[type="date"].entrada { min-height: 48px; }
 .entrada:focus { outline: none; border-color: var(--t4); box-shadow: inset 0 0 0 1px var(--t4); }
 .entrada:invalid:not(:placeholder-shown):not(:focus) { border-color: var(--ocre); }
 .camp-fila { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--e3); }
-.camp-fila.dos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
 .camp-mal, .camp .mal { font-size: 14px; font-weight: 600; color: var(--ocre); }
 .camp-mal::before { content: "— "; }
 
@@ -213,10 +211,6 @@ input[type="date"].entrada { min-height: 48px; }
 .tria-bt:first-child { border-left: 0; }
 .tria-bt[aria-pressed="true"] { background: var(--tinta); color: var(--blanc); font-weight: 600; }
 @media (hover: hover) and (pointer: fine) { .tria-bt:not([aria-pressed="true"]):hover { background: var(--camp-alt); } }
-
-.camp > label.check { font-size: 15px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--tinta); }
-.check { display: flex; align-items: center; gap: var(--e3); min-height: 44px; font-size: 15px; cursor: pointer; }
-.check input { width: 22px; height: 22px; margin: 0; accent-color: var(--t4); flex: none; }
 
 /* --------------------------------------------------- el full que puja */
 /* EL MODAL ÉS UN FULL QUE PUJA DES DE BAIX al mòbil, que és on hi ha el dit,
@@ -243,7 +237,7 @@ input[type="date"].entrada { min-height: 48px; }
 }
 .modal-cap h2 { font-size: 20px; font-weight: 600; letter-spacing: -.01em; text-transform: none; }
 .modal-cap .btn-icona { margin-right: calc(-1 * var(--e2)); }
-.modal > p + p, .modal > p + .formulari, .modal > p + .form-ajustos { margin-top: var(--e3); }
+.modal > p + p, .modal > p + .form-ajustos { margin-top: var(--e3); }
 /* La finestra de connexió posa els camps directament al full, sense formulari:
    l'aire entre ells ha de venir d'aquí. */
 .modal > .camp + .camp { margin-top: var(--e5); }
@@ -330,7 +324,6 @@ input[type="date"].entrada { min-height: 48px; }
 .vis-ara { fill: var(--t4); }
 .vis-marca { stroke: var(--fil); }
 
-
 /* ============================================================== FINANCES */
 /* La capçalera: la marca a dalt amb les dues accions de sempre, i a sota el
    període, que és alhora el títol i el botó per triar què vols veure. Les
@@ -374,7 +367,7 @@ input[type="date"].entrada { min-height: 48px; }
 .tall .avui { stroke: var(--tinta-2); stroke-width: 1; stroke-dasharray: 2 3; }
 .tall .marca-dia { stroke: var(--fil); stroke-width: 1; }
 .tall text { font-family: var(--font); font-size: 12px; font-weight: 600; letter-spacing: .1em; fill: var(--tinta-2); }
-.tall text.fort { fill: var(--tinta); }
+
 .tall-llegenda { display: flex; flex-wrap: wrap; gap: var(--e1) var(--e4); margin-top: var(--e2); max-width: 560px; }
 .seccio-cap .tall-llegenda { margin: 0; }
 .tall-llegenda span { display: inline-flex; align-items: center; gap: var(--e2); }
@@ -544,9 +537,8 @@ button.fila:active { background: var(--camp-alt); }
 /* ----------------------------------------------- els fulls de finances */
 /* Els formularis de finances porten l'etiqueta i el camp dins d'un <label>:
    aquí tenen el mateix aspecte que els del cos. */
-.form-ajustos > label:not(.check):not(.cat-exclou), .form-apunt > label:not(.check):not(.cat-exclou) {
-  display: grid; gap: var(--e2);
-}
+.form-ajustos > label:not(.cat-exclou) { display: grid; gap: var(--e2); }
+
 .form-ajustos > label > .marge { color: var(--tinta); }
 .form-ajustos input:not([type="checkbox"]):not([type="file"]), .form-ajustos select, .rev-fila select {
   width: 100%; min-height: 48px; padding: 10px 12px;
